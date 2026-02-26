@@ -1,2 +1,2 @@
-AWC - A Wayland Compositor.
+AWC / A Wayland Compositor.
 --------------------------
