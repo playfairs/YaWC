@@ -1,0 +1,28 @@
+[package]
+name = "awc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wayland-server     = "0.31"
+winit              = "0.30"
+tracing-subscriber = "0.3"
+
+[dependencies.wayland-protocols]
+version  = "0.32"
+features = ["server"]
+
+[dependencies.smithay]
+version = "0.7"
+features = [
+    "renderer_gl",
+    "use_system_lib",
+    "backend_winit",
+    "backend_drm",
+    "backend_gbm",
+    "backend_egl",
+    "backend_udev",
+    "backend_libinput",
+    "backend_session_libseat",
+    "wayland_frontend",
+]
