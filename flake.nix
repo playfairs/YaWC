@@ -18,14 +18,20 @@
     let
       overlays = {
         default = final: prev: {
-          awc = (final.callPackage naersk {
-            cargo = final.rust-bin.nightly.latest.default;
-            rustc = final.rust-bin.nightly.latest.default;
-          }).buildPackage {
-            pname = "awc";
-            src = ./.;
-            buildInputs = with final; [ pkg-config jack2 alsa-lib ];
-          };
+          awc =
+            (final.callPackage naersk {
+              cargo = final.rust-bin.nightly.latest.default;
+              rustc = final.rust-bin.nightly.latest.default;
+            }).buildPackage
+              {
+                pname = "yawc";
+                src = ./.;
+                buildInputs = with final; [
+                  pkg-config
+                  jack2
+                  alsa-lib
+                ];
+              };
         };
       };
     in
@@ -56,6 +62,7 @@
             ++ lib.optionals stdenv.isLinux [
               pipewire
               seatd
+              libdisplay-info
               alsa-lib
               jack2
               udev
