@@ -1,6 +1,6 @@
 use std::{convert::TryInto, process::Command, sync::atomic::Ordering};
 
-use crate::{focus::PointerFocusTarget, shell::FullscreenSurface, AnvilState};
+use crate::{AnvilState, focus::PointerFocusTarget, shell::FullscreenSurface};
 
 #[cfg(feature = "udev")]
 use crate::udev::UdevData;
@@ -12,9 +12,9 @@ use smithay::{
         self, Axis, AxisSource, Event, InputBackend, InputEvent, KeyState, KeyboardKeyEvent,
         PointerAxisEvent, PointerButtonEvent,
     },
-    desktop::{layer_map_for_output, WindowSurfaceType},
+    desktop::{WindowSurfaceType, layer_map_for_output},
     input::{
-        keyboard::{keysyms as xkb, FilterResult, Keysym, ModifiersState},
+        keyboard::{FilterResult, Keysym, ModifiersState, keysyms as xkb},
         pointer::{AxisFrame, ButtonEvent, MotionEvent},
     },
     output::Scale,
@@ -22,7 +22,7 @@ use smithay::{
         wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1,
         wayland_server::protocol::wl_pointer,
     },
-    utils::{Logical, Point, Serial, Transform, SERIAL_COUNTER as SCOUNTER},
+    utils::{Logical, Point, SERIAL_COUNTER as SCOUNTER, Serial, Transform},
     wayland::{
         input_method::InputMethodSeat,
         keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitorSeat,
@@ -59,7 +59,7 @@ use smithay::{
     },
     reexports::wayland_server::DisplayHandle,
     wayland::{
-        pointer_constraints::{with_pointer_constraint, PointerConstraint},
+        pointer_constraints::{PointerConstraint, with_pointer_constraint},
         seat::WaylandFocus,
         tablet_manager::{TabletDescriptor, TabletSeatTrait},
     },
@@ -203,11 +203,12 @@ impl<BackendData: Backend> AnvilState<BackendData> {
                         if !inhibited {
                             let action = process_keyboard_shortcut(*modifiers, keysym);
 
-                            if action.is_some() {
+                            if action != KeyAction::None {
                                 suppressed_keys.push(keysym);
                             }
 
-                            action
+                            Some(action)
+                                .filter(|x| x != &KeyAction::None)
                                 .map(FilterResult::Intercept)
                                 .unwrap_or(FilterResult::Forward)
                         } else {
@@ -1343,7 +1344,7 @@ impl AnvilState<UdevData> {
 
 /// Possible results of a keyboard action
 #[allow(dead_code)] // some of these are only read if udev is enabled
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum KeyAction {
     /// Quit the compositor
     Quit,
@@ -1363,35 +1364,34 @@ enum KeyAction {
     None,
 }
 
-fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> Option<KeyAction> {
+fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAction {
+    use KeyAction::*;
     if modifiers.ctrl && modifiers.alt && keysym == Keysym::BackSpace
         || modifiers.logo && keysym == Keysym::q
     {
         // ctrl+alt+backspace = quit
         // logo + q = quit
-        Some(KeyAction::Quit)
+        Quit
     } else if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12).contains(&keysym.raw()) {
         // VTSwitch
-        Some(KeyAction::VtSwitch(
-            (keysym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32,
-        ))
+        VtSwitch((keysym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
     } else if modifiers.logo && keysym == Keysym::Return {
         // run terminal
-        Some(KeyAction::Run("alacritty".into()))
+        Run("alacritty".into())
     } else if modifiers.logo && (xkb::KEY_1..=xkb::KEY_9).contains(&keysym.raw()) {
-        Some(KeyAction::Screen((keysym.raw() - xkb::KEY_1) as usize))
+        Screen((keysym.raw() - xkb::KEY_1) as usize)
     } else if modifiers.logo && modifiers.shift && keysym == Keysym::M {
-        Some(KeyAction::ScaleDown)
+        ScaleDown
     } else if modifiers.logo && modifiers.shift && keysym == Keysym::P {
-        Some(KeyAction::ScaleUp)
+        ScaleUp
     } else if modifiers.logo && modifiers.shift && keysym == Keysym::W {
-        Some(KeyAction::TogglePreview)
+        TogglePreview
     } else if modifiers.logo && modifiers.shift && keysym == Keysym::R {
-        Some(KeyAction::RotateOutput)
+        RotateOutput
     } else if modifiers.logo && modifiers.shift && keysym == Keysym::T {
-        Some(KeyAction::ToggleTint)
+        ToggleTint
     } else if modifiers.logo && modifiers.shift && keysym == Keysym::D {
-        Some(KeyAction::ToggleDecorations)
+        ToggleDecorations
     } else {
         None
     }
