@@ -1,19 +1,8 @@
-static POSSIBLE_BACKENDS: &[&str] = &[
-    #[cfg(feature = "winit")]
-    "--winit : Run yawc as a X11 or Wayland client using winit.",
-    #[cfg(feature = "udev")]
-    "--tty-udev : Run yawc as a tty udev client (requires root if without logind).",
-    #[cfg(feature = "x11")]
-    "--x11 : Run yawc as an X11 client.",
-];
-
 #[cfg(feature = "profile-with-tracy-mem")]
 #[global_allocator]
 static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
     profiling::tracy_client::ProfiledAllocator::new(std::alloc::System, 10);
 
-// Allow in this function because of existing usage
-#[allow(clippy::uninlined_format_args)]
 fn main() {
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
         tracing_subscriber::fmt()
@@ -35,36 +24,14 @@ fn main() {
     #[cfg(feature = "profile-with-puffin")]
     profiling::puffin::set_scopes_on(true);
 
-    let arg = ::std::env::args().nth(1);
-    match arg.as_ref().map(|s| &s[..]) {
-        #[cfg(feature = "winit")]
-        Some("--winit") => {
-            tracing::info!("Starting yawc with winit backend");
-            yawc::winit::run_winit();
-        }
-        #[cfg(feature = "udev")]
-        Some("--tty-udev") => {
-            tracing::info!("Starting yawc on a tty using udev");
-            yawc::udev::run_udev();
-        }
-        #[cfg(feature = "x11")]
-        Some("--x11") => {
-            tracing::info!("Starting yawc with x11 backend");
-            yawc::x11::run_x11();
-        }
-        Some(other) => {
-            tracing::error!("Unknown backend: {}", other);
-        }
-        None => {
-            #[allow(clippy::disallowed_macros)]
-            {
-                println!("USAGE: yawc --backend");
-                println!();
-                println!("Possible backends are:");
-                for b in POSSIBLE_BACKENDS {
-                    println!("\t{b}");
-                }
-            }
-        }
+    if std::env::var("WAYLAND_DISPLAY").is_ok() {
+        tracing::info!("Starting yawc with winit backend");
+        yawc::winit::run_winit();
+    } else if std::env::var("DISPLAY").is_ok() {
+        tracing::info!("Starting yawc with x11 backend");
+        yawc::x11::run_x11();
+    } else {
+        tracing::info!("Starting yawc on a tty using udev");
+        yawc::udev::run_udev();
     }
 }
