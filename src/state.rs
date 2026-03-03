@@ -784,7 +784,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
         let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
 
         let pointer = seat.add_pointer();
-        seat.add_keyboard(XkbConfig::default(), 150, 15)
+        seat.add_keyboard(XkbConfig::default(), 200, 50)
             .expect("Failed to initialize the keyboard");
 
         let keyboard_shortcuts_inhibit_state = KeyboardShortcutsInhibitState::new::<Self>(&dh);
