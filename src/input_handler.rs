@@ -1385,10 +1385,10 @@ fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAc
     );
 
     match (modifiers.logo, modifiers.shift, keysym) {
-        // FIXME: true, false, _ will not work?
-        // Actual keybind should just be Meta + Q but you see the problem with
-        // what we have as keybinds right now; and this issue at stake.
-        (true, true, Keysym::E) => DestroyFocusedClient,
+        // FIXME + TODO: Create a ridgid system for bindings
+        // This binding system is case-sensitive, which
+        // it shouldnt be.
+        (true, false, Keysym::q) => DestroyFocusedClient,
         (true, true, Keysym::Q) => Exit,
 
         (true, _, Keysym::Return) => Exec("alacritty".into()),
