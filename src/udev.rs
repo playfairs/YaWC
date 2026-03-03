@@ -13,7 +13,7 @@ use crate::{
     drawing::*,
     render::*,
     shell::WindowElement,
-    state::{YawcState, Backend, take_presentation_feedback, update_primary_scanout_output},
+    state::{Backend, YawcState, take_presentation_feedback, update_primary_scanout_output},
 };
 use crate::{
     shell::WindowRenderElement,
@@ -226,6 +226,25 @@ pub fn run_udev() {
     let mut event_loop = EventLoop::try_new().unwrap();
     let display = Display::new().unwrap();
     let mut display_handle = display.handle();
+
+    unsafe {
+        // Set variables for a XDG desktop session portal
+        // to be used.
+        std::env::set_var("XDG_CURRENT_DESKTOP", "YaWC");
+        std::env::set_var("XDG_SESSION_DESKTOP", "YaWC");
+        std::env::set_var("XDG_SESSION_TYPE", "wayland");
+
+        // Set QT to try a Wayland plugin, otherwise
+        // default to X11.
+        std::env::set_var("QT_QPA_PLATFORM", "wayland;xcb");
+
+        // Set Electron stuff to try to run hinting with
+        // wayland support
+        std::env::set_var("ELECTRON_OZONE_PLATFORM_HINT", "wayland");
+
+        // Set GTK Backend to Wayland
+        std::env::set_var("GTK_BACKEND", "wayland");
+    }
 
     /*
      * Initialize session
