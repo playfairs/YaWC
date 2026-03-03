@@ -2,12 +2,12 @@
 
 use smithay::{
     backend::renderer::{
+        Color32F, ImportAll, ImportMem, Renderer, Texture,
         element::{
+            AsRenderElements, Kind,
             memory::{MemoryRenderBuffer, MemoryRenderBufferRenderElement},
             surface::WaylandSurfaceRenderElement,
-            AsRenderElements, Kind,
         },
-        Color32F, ImportAll, ImportMem, Renderer, Texture,
     },
     input::pointer::CursorImageStatus,
     render_elements,
@@ -16,9 +16,9 @@ use smithay::{
 #[cfg(feature = "debug")]
 use smithay::{
     backend::renderer::{
+        Frame,
         element::{Element, Id, RenderElement},
         utils::CommitCounter,
-        Frame,
     },
     utils::{Buffer, Logical, Rectangle, Size, Transform},
 };
@@ -86,19 +86,21 @@ where
             // Always render `Default` for a named shape.
             CursorImageStatus::Named(_) => {
                 if let Some(buffer) = self.buffer.as_ref() {
-                    vec![PointerRenderElement::<R>::from(
-                        MemoryRenderBufferRenderElement::from_buffer(
-                            renderer,
-                            location.to_f64(),
-                            buffer,
-                            None,
-                            None,
-                            None,
-                            Kind::Cursor,
+                    vec![
+                        PointerRenderElement::<R>::from(
+                            MemoryRenderBufferRenderElement::from_buffer(
+                                renderer,
+                                location.to_f64(),
+                                buffer,
+                                None,
+                                None,
+                                None,
+                                Kind::Cursor,
+                            )
+                            .expect("Lost system pointer buffer"),
                         )
-                        .expect("Lost system pointer buffer"),
-                    )
-                    .into()]
+                        .into(),
+                    ]
                 } else {
                     vec![]
                 }
@@ -210,11 +212,14 @@ where
         let mut offset: Point<f64, Physical> = Point::from((0.0, 0.0));
         for digit in value_str.chars().map(|d| d.to_digit(10).unwrap()) {
             let digit_location = dst.loc.to_f64() + offset;
-            let digit_size = Size::<i32, Logical>::from((22, 35)).to_f64().to_physical(scale);
+            let digit_size = Size::<i32, Logical>::from((22, 35))
+                .to_f64()
+                .to_physical(scale);
             let dst = Rectangle::new(
                 digit_location.to_i32_round(),
-                ((digit_size.to_point() + digit_location).to_i32_round() - digit_location.to_i32_round())
-                    .to_size(),
+                ((digit_size.to_point() + digit_location).to_i32_round()
+                    - digit_location.to_i32_round())
+                .to_size(),
             );
             let damage = damage
                 .iter()

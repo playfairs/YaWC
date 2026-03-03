@@ -1,18 +1,18 @@
 use smithay::{
     backend::renderer::{
+        Color32F, ImportAll, ImportMem, Renderer,
         damage::{Error as OutputDamageTrackerError, OutputDamageTracker, RenderOutputResult},
         element::{
+            AsRenderElements, RenderElement, Wrap,
             surface::WaylandSurfaceRenderElement,
             utils::{
                 ConstrainAlign, ConstrainScaleBehavior, CropRenderElement, RelocateRenderElement,
                 RescaleRenderElement,
             },
-            AsRenderElements, RenderElement, Wrap,
         },
-        Color32F, ImportAll, ImportMem, Renderer,
     },
     desktop::space::{
-        constrain_space_element, ConstrainBehavior, ConstrainReference, Space, SpaceRenderElements,
+        ConstrainBehavior, ConstrainReference, Space, SpaceRenderElements, constrain_space_element,
     },
     output::Output,
     utils::{Point, Rectangle, Size},
@@ -21,7 +21,7 @@ use smithay::{
 #[cfg(feature = "debug")]
 use crate::drawing::FpsElement;
 use crate::{
-    drawing::{PointerRenderElement, CLEAR_COLOR, CLEAR_COLOR_FULLSCREEN},
+    drawing::{CLEAR_COLOR, CLEAR_COLOR_FULLSCREEN, PointerRenderElement},
     shell::{FullscreenSurface, WindowElement, WindowRenderElement},
 };
 
@@ -80,7 +80,8 @@ pub fn space_preview_elements<'a, R, C>(
 where
     R: Renderer + ImportAll + ImportMem,
     R::TextureId: Clone + 'static,
-    C: From<CropRenderElement<RelocateRenderElement<RescaleRenderElement<WindowRenderElement<R>>>>> + 'a,
+    C: From<CropRenderElement<RelocateRenderElement<RescaleRenderElement<WindowRenderElement<R>>>>>
+        + 'a,
 {
     let constrain_behavior = ConstrainBehavior {
         reference: ConstrainReference::BoundingBox,
@@ -142,7 +143,10 @@ pub fn output_elements<R>(
     custom_elements: impl IntoIterator<Item = CustomRenderElements<R>>,
     renderer: &mut R,
     show_window_preview: bool,
-) -> (Vec<OutputRenderElements<R, WindowRenderElement<R>>>, Color32F)
+) -> (
+    Vec<OutputRenderElements<R, WindowRenderElement<R>>>,
+    Color32F,
+)
 where
     R: Renderer + ImportAll + ImportMem,
     R::TextureId: Clone + 'static,
@@ -204,7 +208,12 @@ where
     R: Renderer + ImportAll + ImportMem,
     R::TextureId: Clone + 'static,
 {
-    let (elements, clear_color) =
-        output_elements(output, space, custom_elements, renderer, show_window_preview);
+    let (elements, clear_color) = output_elements(
+        output,
+        space,
+        custom_elements,
+        renderer,
+        show_window_preview,
+    );
     damage_tracker.render_output(renderer, framebuffer, age, &elements, clear_color)
 }

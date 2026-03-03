@@ -20,4 +20,4 @@ pub mod winit;
 #[cfg(feature = "x11")]
 pub mod x11;
 
-pub use state::{YawcState, ClientState};
+pub use state::{ClientState, YawcState};
