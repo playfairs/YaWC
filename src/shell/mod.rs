@@ -41,7 +41,7 @@ use smithay::{
 };
 
 use crate::{
-    state::{AnvilState, Backend},
+    state::{YawcState, Backend},
     ClientState,
 };
 
@@ -95,11 +95,11 @@ impl FullscreenSurface {
     }
 }
 
-impl<BackendData: Backend> BufferHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> BufferHandler for YawcState<BackendData> {
     fn buffer_destroyed(&mut self, _buffer: &WlBuffer) {}
 }
 
-impl<BackendData: Backend> CompositorHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> CompositorHandler for YawcState<BackendData> {
     fn compositor_state(&mut self) -> &mut CompositorState {
         &mut self.compositor_state
     }
@@ -242,7 +242,7 @@ impl<BackendData: Backend> CompositorHandler for AnvilState<BackendData> {
     }
 }
 
-impl<BackendData: Backend> WlrLayerShellHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> WlrLayerShellHandler for YawcState<BackendData> {
     fn shell_state(&mut self) -> &mut WlrLayerShellState {
         &mut self.layer_shell_state
     }
@@ -276,7 +276,7 @@ impl<BackendData: Backend> WlrLayerShellHandler for AnvilState<BackendData> {
     }
 }
 
-impl<BackendData: Backend> AnvilState<BackendData> {
+impl<BackendData: Backend> YawcState<BackendData> {
     pub fn window_for_surface(&self, surface: &WlSurface) -> Option<WindowElement> {
         self.space
             .elements()

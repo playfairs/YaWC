@@ -148,12 +148,12 @@ impl ClientData for ClientState {
 }
 
 #[derive(Debug)]
-pub struct AnvilState<BackendData: Backend + 'static> {
+pub struct YawcState<BackendData: Backend + 'static> {
     pub backend_data: BackendData,
     pub socket_name: Option<String>,
     pub display_handle: DisplayHandle,
     pub running: Arc<AtomicBool>,
-    pub handle: LoopHandle<'static, AnvilState<BackendData>>,
+    pub handle: LoopHandle<'static, YawcState<BackendData>>,
 
     // desktop
     pub space: Space<WindowElement>,
@@ -166,7 +166,7 @@ pub struct AnvilState<BackendData: Backend + 'static> {
     pub output_manager_state: OutputManagerState,
     pub primary_selection_state: PrimarySelectionState,
     pub data_control_state: DataControlState,
-    pub seat_state: SeatState<AnvilState<BackendData>>,
+    pub seat_state: SeatState<YawcState<BackendData>>,
     pub keyboard_shortcuts_inhibit_state: KeyboardShortcutsInhibitState,
     pub shm_state: ShmState,
     pub viewporter_state: ViewporterState,
@@ -191,9 +191,9 @@ pub struct AnvilState<BackendData: Backend + 'static> {
     pub suppressed_keys: Vec<Keysym>,
     pub cursor_status: CursorImageStatus,
     pub seat_name: String,
-    pub seat: Seat<AnvilState<BackendData>>,
+    pub seat: Seat<YawcState<BackendData>>,
     pub clock: Clock<Monotonic>,
-    pub pointer: PointerHandle<AnvilState<BackendData>>,
+    pub pointer: PointerHandle<YawcState<BackendData>>,
 
     #[cfg(feature = "xwayland")]
     pub xwm: Option<X11Wm>,
@@ -212,15 +212,15 @@ pub struct DndIcon {
     pub offset: Point<i32, Logical>,
 }
 
-delegate_compositor!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_compositor!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> DataDeviceHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> DataDeviceHandler for YawcState<BackendData> {
     fn data_device_state(&mut self) -> &mut DataDeviceState {
         &mut self.data_device_state
     }
 }
 
-impl<BackendData: Backend> WaylandDndGrabHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> WaylandDndGrabHandler for YawcState<BackendData> {
     fn dnd_requested<S: Source>(
         &mut self,
         source: S,
@@ -258,7 +258,7 @@ impl<BackendData: Backend> WaylandDndGrabHandler for AnvilState<BackendData> {
     }
 }
 
-impl<BackendData: Backend> DndGrabHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> DndGrabHandler for YawcState<BackendData> {
     fn dropped(
         &mut self,
         _target: Option<DndTarget<'_, Self>>,
@@ -269,12 +269,12 @@ impl<BackendData: Backend> DndGrabHandler for AnvilState<BackendData> {
         self.dnd_icon = None;
     }
 }
-delegate_data_device!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_data_device!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> OutputHandler for AnvilState<BackendData> {}
-delegate_output!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+impl<BackendData: Backend> OutputHandler for YawcState<BackendData> {}
+delegate_output!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> SelectionHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> SelectionHandler for YawcState<BackendData> {
     type SelectionUserData = ();
 
     #[cfg(feature = "xwayland")]
@@ -308,34 +308,34 @@ impl<BackendData: Backend> SelectionHandler for AnvilState<BackendData> {
     }
 }
 
-impl<BackendData: Backend> PrimarySelectionHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> PrimarySelectionHandler for YawcState<BackendData> {
     fn primary_selection_state(&mut self) -> &mut PrimarySelectionState {
         &mut self.primary_selection_state
     }
 }
-delegate_primary_selection!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_primary_selection!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> DataControlHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> DataControlHandler for YawcState<BackendData> {
     fn data_control_state(&mut self) -> &mut DataControlState {
         &mut self.data_control_state
     }
 }
 
-delegate_data_control!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_data_control!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> ShmHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> ShmHandler for YawcState<BackendData> {
     fn shm_state(&self) -> &ShmState {
         &self.shm_state
     }
 }
-delegate_shm!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_shm!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> SeatHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> SeatHandler for YawcState<BackendData> {
     type KeyboardFocus = KeyboardFocusTarget;
     type PointerFocus = PointerFocusTarget;
     type TouchFocus = PointerFocusTarget;
 
-    fn seat_state(&mut self) -> &mut SeatState<AnvilState<BackendData>> {
+    fn seat_state(&mut self) -> &mut SeatState<YawcState<BackendData>> {
         &mut self.seat_state
     }
 
@@ -356,19 +356,19 @@ impl<BackendData: Backend> SeatHandler for AnvilState<BackendData> {
         self.backend_data.update_led_state(led_state)
     }
 }
-delegate_seat!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_seat!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> TabletSeatHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> TabletSeatHandler for YawcState<BackendData> {
     fn tablet_tool_image(&mut self, _tool: &TabletToolDescriptor, image: CursorImageStatus) {
         // TODO: tablet tools should have their own cursors
         self.cursor_status = image;
     }
 }
-delegate_tablet_manager!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_tablet_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_text_input_manager!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_text_input_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> InputMethodHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> InputMethodHandler for YawcState<BackendData> {
     fn new_popup(&mut self, surface: PopupSurface) {
         if let Err(err) = self.popups.track_popup(PopupKind::from(surface)) {
             warn!("Failed to track popup: {}", err);
@@ -393,9 +393,9 @@ impl<BackendData: Backend> InputMethodHandler for AnvilState<BackendData> {
     }
 }
 
-delegate_input_method_manager!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_input_method_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> KeyboardShortcutsInhibitHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> KeyboardShortcutsInhibitHandler for YawcState<BackendData> {
     fn keyboard_shortcuts_inhibit_state(&mut self) -> &mut KeyboardShortcutsInhibitState {
         &mut self.keyboard_shortcuts_inhibit_state
     }
@@ -406,15 +406,15 @@ impl<BackendData: Backend> KeyboardShortcutsInhibitHandler for AnvilState<Backen
     }
 }
 
-delegate_keyboard_shortcuts_inhibit!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_keyboard_shortcuts_inhibit!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_virtual_keyboard_manager!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_virtual_keyboard_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_pointer_gestures!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_pointer_gestures!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_relative_pointer!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_relative_pointer!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> PointerConstraintsHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> PointerConstraintsHandler for YawcState<BackendData> {
     fn new_constraint(&mut self, surface: &WlSurface, pointer: &PointerHandle<Self>) {
         // XXX region
         let Some(current_focus) = pointer.current_focus() else {
@@ -450,11 +450,11 @@ impl<BackendData: Backend> PointerConstraintsHandler for AnvilState<BackendData>
         }
     }
 }
-delegate_pointer_constraints!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_pointer_constraints!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_viewporter!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_viewporter!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> XdgActivationHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> XdgActivationHandler for YawcState<BackendData> {
     fn activation_state(&mut self) -> &mut XdgActivationState {
         &mut self.xdg_activation_state
     }
@@ -491,9 +491,9 @@ impl<BackendData: Backend> XdgActivationHandler for AnvilState<BackendData> {
         }
     }
 }
-delegate_xdg_activation!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_xdg_activation!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> XdgDecorationHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> XdgDecorationHandler for YawcState<BackendData> {
     fn new_decoration(&mut self, toplevel: ToplevelSurface) {
         use xdg_decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode;
         // Set the default to client side
@@ -526,13 +526,13 @@ impl<BackendData: Backend> XdgDecorationHandler for AnvilState<BackendData> {
         }
     }
 }
-delegate_xdg_decoration!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_xdg_decoration!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_xdg_shell!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
-delegate_layer_shell!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
-delegate_presentation!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_xdg_shell!(@<BackendData: Backend + 'static> YawcState<BackendData>);
+delegate_layer_shell!(@<BackendData: Backend + 'static> YawcState<BackendData>);
+delegate_presentation!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> FractionalScaleHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> FractionalScaleHandler for YawcState<BackendData> {
     fn new_fractional_scale(
         &mut self,
         surface: smithay::reexports::wayland_server::protocol::wl_surface::WlSurface,
@@ -546,7 +546,7 @@ impl<BackendData: Backend> FractionalScaleHandler for AnvilState<BackendData> {
         // If the surface is the root we also try to use the first output of the toplevel.
         //
         // If all the above tests do not lead to a output we just use the first output
-        // of the space (which in case of anvil will also be the output a toplevel will
+        // of the space (which in case of yawc will also be the output a toplevel will
         // initially be placed on)
         #[allow(clippy::redundant_clone)]
         let mut root = surface.clone();
@@ -580,9 +580,9 @@ impl<BackendData: Backend> FractionalScaleHandler for AnvilState<BackendData> {
         });
     }
 }
-delegate_fractional_scale!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_fractional_scale!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend + 'static> SecurityContextHandler for AnvilState<BackendData> {
+impl<BackendData: Backend + 'static> SecurityContextHandler for YawcState<BackendData> {
     fn context_created(
         &mut self,
         source: SecurityContextListenerSource,
@@ -604,10 +604,10 @@ impl<BackendData: Backend + 'static> SecurityContextHandler for AnvilState<Backe
             .expect("Failed to init wayland socket source");
     }
 }
-delegate_security_context!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_security_context!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 #[cfg(feature = "xwayland")]
-impl<BackendData: Backend + 'static> XWaylandKeyboardGrabHandler for AnvilState<BackendData> {
+impl<BackendData: Backend + 'static> XWaylandKeyboardGrabHandler for YawcState<BackendData> {
     fn keyboard_focus_for_xsurface(&self, surface: &WlSurface) -> Option<KeyboardFocusTarget> {
         let elem = self
             .space
@@ -617,34 +617,34 @@ impl<BackendData: Backend + 'static> XWaylandKeyboardGrabHandler for AnvilState<
     }
 }
 #[cfg(feature = "xwayland")]
-delegate_xwayland_keyboard_grab!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_xwayland_keyboard_grab!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 #[cfg(feature = "xwayland")]
-delegate_xwayland_shell!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_xwayland_shell!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> XdgForeignHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> XdgForeignHandler for YawcState<BackendData> {
     fn xdg_foreign_state(&mut self) -> &mut XdgForeignState {
         &mut self.xdg_foreign_state
     }
 }
-smithay::delegate_xdg_foreign!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_xdg_foreign!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-smithay::delegate_single_pixel_buffer!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_single_pixel_buffer!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-smithay::delegate_fifo!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_fifo!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-smithay::delegate_commit_timing!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_commit_timing!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-delegate_fixes!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+delegate_fixes!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> ImageCaptureSourceHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> ImageCaptureSourceHandler for YawcState<BackendData> {
     fn source_destroyed(&mut self, _source: ImageCaptureSource) {
         // Anvil doesn't track sources
     }
 }
-smithay::delegate_image_capture_source!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_image_capture_source!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> OutputCaptureSourceHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> OutputCaptureSourceHandler for YawcState<BackendData> {
     fn output_capture_source_state(&mut self) -> &mut OutputCaptureSourceState {
         &mut self.output_capture_source_state
     }
@@ -653,9 +653,9 @@ impl<BackendData: Backend> OutputCaptureSourceHandler for AnvilState<BackendData
         source.user_data().insert_if_missing(|| output.downgrade());
     }
 }
-smithay::delegate_output_capture_source!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_output_capture_source!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> ImageCopyCaptureHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> ImageCopyCaptureHandler for YawcState<BackendData> {
     fn image_copy_capture_state(&mut self) -> &mut ImageCopyCaptureState {
         &mut self.image_copy_capture_state
     }
@@ -689,15 +689,15 @@ impl<BackendData: Backend> ImageCopyCaptureHandler for AnvilState<BackendData> {
         frame.fail(smithay::wayland::image_copy_capture::CaptureFailureReason::Unknown);
     }
 }
-smithay::delegate_image_copy_capture!(@<BackendData: Backend + 'static> AnvilState<BackendData>);
+smithay::delegate_image_copy_capture!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend + 'static> AnvilState<BackendData> {
+impl<BackendData: Backend + 'static> YawcState<BackendData> {
     pub fn init(
-        display: Display<AnvilState<BackendData>>,
-        handle: LoopHandle<'static, AnvilState<BackendData>>,
+        display: Display<YawcState<BackendData>>,
+        handle: LoopHandle<'static, YawcState<BackendData>>,
         backend_data: BackendData,
         listen_on_socket: bool,
-    ) -> AnvilState<BackendData> {
+    ) -> YawcState<BackendData> {
         let dh = display.handle();
 
         let clock = Clock::new();
@@ -784,7 +784,7 @@ impl<BackendData: Backend + 'static> AnvilState<BackendData> {
         let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
 
         let pointer = seat.add_pointer();
-        seat.add_keyboard(XkbConfig::default(), 200, 25)
+        seat.add_keyboard(XkbConfig::default(), 150, 15)
             .expect("Failed to initialize the keyboard");
 
         let keyboard_shortcuts_inhibit_state = KeyboardShortcutsInhibitState::new::<Self>(&dh);
@@ -795,7 +795,7 @@ impl<BackendData: Backend + 'static> AnvilState<BackendData> {
         #[cfg(feature = "xwayland")]
         XWaylandKeyboardGrabState::new::<Self>(&dh.clone());
 
-        AnvilState {
+        YawcState {
             backend_data,
             display_handle: dh,
             socket_name,
@@ -908,7 +908,7 @@ impl<BackendData: Backend + 'static> AnvilState<BackendData> {
     }
 }
 
-impl<BackendData: Backend + 'static> AnvilState<BackendData> {
+impl<BackendData: Backend + 'static> YawcState<BackendData> {
     pub fn pre_repaint(&mut self, output: &Output, frame_target: impl Into<Time<Monotonic>>) {
         let frame_target = frame_target.into();
 

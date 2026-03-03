@@ -34,7 +34,7 @@ use smithay::{
 
 use crate::{
     shell::{SSD, WindowElement},
-    state::{AnvilState, Backend},
+    state::{Backend, YawcState},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -87,7 +87,7 @@ impl From<PointerFocusTarget> for WlSurface {
 impl KeyboardFocusTarget {
     fn inner_keyboard_target<BackendData: Backend>(
         &self,
-    ) -> &dyn KeyboardTarget<AnvilState<BackendData>> {
+    ) -> &dyn KeyboardTarget<YawcState<BackendData>> {
         match self {
             Self::Window(w) => match w.underlying_surface() {
                 WindowSurface::Wayland(w) => w.wl_surface(),
@@ -103,7 +103,7 @@ impl KeyboardFocusTarget {
 impl PointerFocusTarget {
     fn inner_pointer_target<BackendData: Backend>(
         &self,
-    ) -> &dyn PointerTarget<AnvilState<BackendData>> {
+    ) -> &dyn PointerTarget<YawcState<BackendData>> {
         match self {
             Self::WlSurface(w) => w,
             #[cfg(feature = "xwayland")]
@@ -112,9 +112,7 @@ impl PointerFocusTarget {
         }
     }
 
-    fn inner_touch_target<BackendData: Backend>(
-        &self,
-    ) -> &dyn TouchTarget<AnvilState<BackendData>> {
+    fn inner_touch_target<BackendData: Backend>(&self) -> &dyn TouchTarget<YawcState<BackendData>> {
         match self {
             Self::WlSurface(w) => w,
             #[cfg(feature = "xwayland")]
@@ -124,27 +122,27 @@ impl PointerFocusTarget {
     }
 }
 
-impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFocusTarget {
+impl<BackendData: Backend> PointerTarget<YawcState<BackendData>> for PointerFocusTarget {
     fn enter(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &MotionEvent,
     ) {
         self.inner_pointer_target().enter(seat, data, event)
     }
     fn motion(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &MotionEvent,
     ) {
         self.inner_pointer_target().motion(seat, data, event)
     }
     fn relative_motion(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &RelativeMotionEvent,
     ) {
         self.inner_pointer_target()
@@ -152,27 +150,27 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn button(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &ButtonEvent,
     ) {
         self.inner_pointer_target().button(seat, data, event)
     }
     fn axis(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         frame: AxisFrame,
     ) {
         self.inner_pointer_target().axis(seat, data, frame)
     }
-    fn frame(&self, seat: &Seat<AnvilState<BackendData>>, data: &mut AnvilState<BackendData>) {
+    fn frame(&self, seat: &Seat<YawcState<BackendData>>, data: &mut YawcState<BackendData>) {
         self.inner_pointer_target().frame(seat, data)
     }
     fn leave(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         serial: Serial,
         time: u32,
     ) {
@@ -180,8 +178,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_swipe_begin(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GestureSwipeBeginEvent,
     ) {
         self.inner_pointer_target()
@@ -189,8 +187,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_swipe_update(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GestureSwipeUpdateEvent,
     ) {
         self.inner_pointer_target()
@@ -198,8 +196,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_swipe_end(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GestureSwipeEndEvent,
     ) {
         self.inner_pointer_target()
@@ -207,8 +205,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_pinch_begin(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GesturePinchBeginEvent,
     ) {
         self.inner_pointer_target()
@@ -216,8 +214,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_pinch_update(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GesturePinchUpdateEvent,
     ) {
         self.inner_pointer_target()
@@ -225,8 +223,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_pinch_end(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GesturePinchEndEvent,
     ) {
         self.inner_pointer_target()
@@ -234,8 +232,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_hold_begin(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GestureHoldBeginEvent,
     ) {
         self.inner_pointer_target()
@@ -243,8 +241,8 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
     fn gesture_hold_end(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &GestureHoldEndEvent,
     ) {
         self.inner_pointer_target()
@@ -252,11 +250,11 @@ impl<BackendData: Backend> PointerTarget<AnvilState<BackendData>> for PointerFoc
     }
 }
 
-impl<BackendData: Backend> KeyboardTarget<AnvilState<BackendData>> for KeyboardFocusTarget {
+impl<BackendData: Backend> KeyboardTarget<YawcState<BackendData>> for KeyboardFocusTarget {
     fn enter(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         keys: Vec<KeysymHandle<'_>>,
         serial: Serial,
     ) {
@@ -264,16 +262,16 @@ impl<BackendData: Backend> KeyboardTarget<AnvilState<BackendData>> for KeyboardF
     }
     fn leave(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         serial: Serial,
     ) {
         self.inner_keyboard_target().leave(seat, data, serial)
     }
     fn key(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         key: KeysymHandle<'_>,
         state: KeyState,
         serial: Serial,
@@ -284,8 +282,8 @@ impl<BackendData: Backend> KeyboardTarget<AnvilState<BackendData>> for KeyboardF
     }
     fn modifiers(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         modifiers: ModifiersState,
         serial: Serial,
     ) {
@@ -294,11 +292,11 @@ impl<BackendData: Backend> KeyboardTarget<AnvilState<BackendData>> for KeyboardF
     }
 }
 
-impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocusTarget {
+impl<BackendData: Backend> TouchTarget<YawcState<BackendData>> for PointerFocusTarget {
     fn down(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &smithay::input::touch::DownEvent,
         seq: Serial,
     ) {
@@ -307,8 +305,8 @@ impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocus
 
     fn up(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &smithay::input::touch::UpEvent,
         seq: Serial,
     ) {
@@ -317,8 +315,8 @@ impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocus
 
     fn motion(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &smithay::input::touch::MotionEvent,
         seq: Serial,
     ) {
@@ -327,8 +325,8 @@ impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocus
 
     fn frame(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         seq: Serial,
     ) {
         self.inner_touch_target().frame(seat, data, seq)
@@ -336,8 +334,8 @@ impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocus
 
     fn cancel(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         seq: Serial,
     ) {
         self.inner_touch_target().cancel(seat, data, seq)
@@ -345,8 +343,8 @@ impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocus
 
     fn shape(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &smithay::input::touch::ShapeEvent,
         seq: Serial,
     ) {
@@ -355,8 +353,8 @@ impl<BackendData: Backend> TouchTarget<AnvilState<BackendData>> for PointerFocus
 
     fn orientation(
         &self,
-        seat: &Seat<AnvilState<BackendData>>,
-        data: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        data: &mut YawcState<BackendData>,
         event: &smithay::input::touch::OrientationEvent,
         seq: Serial,
     ) {
@@ -400,63 +398,63 @@ impl WaylandFocus for KeyboardFocusTarget {
     }
 }
 
-pub enum AnvilOfferData<S: Source> {
+pub enum YawcOfferData<S: Source> {
     Wayland(WlOfferData<S>),
     #[cfg(feature = "xwayland")]
     X11(XwmOfferData<S>),
 }
 
-impl<S: Source> OfferData for AnvilOfferData<S> {
+impl<S: Source> OfferData for YawcOfferData<S> {
     fn disable(&self) {
         match self {
-            AnvilOfferData::Wayland(data) => data.disable(),
+            YawcOfferData::Wayland(data) => data.disable(),
             #[cfg(feature = "xwayland")]
-            AnvilOfferData::X11(data) => data.disable(),
+            YawcOfferData::X11(data) => data.disable(),
         }
     }
 
     fn drop(&self) {
         match self {
-            AnvilOfferData::Wayland(data) => data.drop(),
+            YawcOfferData::Wayland(data) => data.drop(),
             #[cfg(feature = "xwayland")]
-            AnvilOfferData::X11(data) => data.drop(),
+            YawcOfferData::X11(data) => data.drop(),
         }
     }
 
     fn validated(&self) -> bool {
         match self {
-            AnvilOfferData::Wayland(data) => data.validated(),
+            YawcOfferData::Wayland(data) => data.validated(),
             #[cfg(feature = "xwayland")]
-            AnvilOfferData::X11(data) => data.validated(),
+            YawcOfferData::X11(data) => data.validated(),
         }
     }
 }
 
 #[allow(unreachable_patterns)]
-impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTarget {
+impl<BackendData: Backend> DndFocus<YawcState<BackendData>> for PointerFocusTarget {
     type OfferData<S>
-        = AnvilOfferData<S>
+        = YawcOfferData<S>
     where
         S: Source;
 
     fn enter<S: Source>(
         &self,
-        data: &mut AnvilState<BackendData>,
+        data: &mut YawcState<BackendData>,
         dh: &DisplayHandle,
         source: Arc<S>,
-        seat: &Seat<AnvilState<BackendData>>,
+        seat: &Seat<YawcState<BackendData>>,
         location: Point<f64, Logical>,
         serial: &Serial,
-    ) -> Option<AnvilOfferData<S>> {
+    ) -> Option<YawcOfferData<S>> {
         match self {
             PointerFocusTarget::WlSurface(surface) => {
                 DndFocus::enter(surface, data, dh, source, seat, location, serial)
-                    .map(AnvilOfferData::Wayland)
+                    .map(YawcOfferData::Wayland)
             }
             #[cfg(feature = "xwayland")]
             PointerFocusTarget::X11Surface(surface) => {
                 DndFocus::enter(surface, data, dh, source, seat, location, serial)
-                    .map(AnvilOfferData::X11)
+                    .map(YawcOfferData::X11)
             }
             _ => None,
         }
@@ -464,16 +462,16 @@ impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTar
 
     fn motion<S: Source>(
         &self,
-        data: &mut AnvilState<BackendData>,
-        offer: Option<&mut AnvilOfferData<S>>,
-        seat: &Seat<AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        offer: Option<&mut YawcOfferData<S>>,
+        seat: &Seat<YawcState<BackendData>>,
         location: Point<f64, Logical>,
         time: u32,
     ) {
         match self {
             PointerFocusTarget::WlSurface(surface) => {
                 let offer = match offer {
-                    Some(AnvilOfferData::Wayland(offer)) => Some(offer),
+                    Some(YawcOfferData::Wayland(offer)) => Some(offer),
                     None => None,
                     _ => return,
                 };
@@ -482,7 +480,7 @@ impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTar
             #[cfg(feature = "xwayland")]
             PointerFocusTarget::X11Surface(surface) => {
                 let offer = match offer {
-                    Some(AnvilOfferData::X11(offer)) => Some(offer),
+                    Some(YawcOfferData::X11(offer)) => Some(offer),
                     None => None,
                     _ => return,
                 };
@@ -494,14 +492,14 @@ impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTar
 
     fn leave<S: Source>(
         &self,
-        data: &mut AnvilState<BackendData>,
-        offer: Option<&mut AnvilOfferData<S>>,
-        seat: &Seat<AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        offer: Option<&mut YawcOfferData<S>>,
+        seat: &Seat<YawcState<BackendData>>,
     ) {
         match self {
             PointerFocusTarget::WlSurface(surface) => {
                 let offer = match offer {
-                    Some(AnvilOfferData::Wayland(offer)) => Some(offer),
+                    Some(YawcOfferData::Wayland(offer)) => Some(offer),
                     None => None,
                     _ => return,
                 };
@@ -510,7 +508,7 @@ impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTar
             #[cfg(feature = "xwayland")]
             PointerFocusTarget::X11Surface(surface) => {
                 let offer = match offer {
-                    Some(AnvilOfferData::X11(offer)) => Some(offer),
+                    Some(YawcOfferData::X11(offer)) => Some(offer),
                     None => None,
                     _ => return,
                 };
@@ -522,14 +520,14 @@ impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTar
 
     fn drop<S: Source>(
         &self,
-        data: &mut AnvilState<BackendData>,
-        offer: Option<&mut AnvilOfferData<S>>,
-        seat: &Seat<AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        offer: Option<&mut YawcOfferData<S>>,
+        seat: &Seat<YawcState<BackendData>>,
     ) {
         match self {
             PointerFocusTarget::WlSurface(surface) => {
                 let offer = match offer {
-                    Some(AnvilOfferData::Wayland(offer)) => Some(offer),
+                    Some(YawcOfferData::Wayland(offer)) => Some(offer),
                     None => None,
                     _ => return,
                 };
@@ -538,7 +536,7 @@ impl<BackendData: Backend> DndFocus<AnvilState<BackendData>> for PointerFocusTar
             #[cfg(feature = "xwayland")]
             PointerFocusTarget::X11Surface(surface) => {
                 let offer = match offer {
-                    Some(AnvilOfferData::X11(offer)) => Some(offer),
+                    Some(YawcOfferData::X11(offer)) => Some(offer),
                     None => None,
                     _ => return,
                 };

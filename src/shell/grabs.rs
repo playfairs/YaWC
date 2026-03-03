@@ -1,13 +1,14 @@
 use std::cell::RefCell;
 
 use smithay::{
-    desktop::{space::SpaceElement, WindowSurface},
+    desktop::{WindowSurface, space::SpaceElement},
     input::{
         pointer::{
-            AxisFrame, ButtonEvent, GestureHoldBeginEvent, GestureHoldEndEvent, GesturePinchBeginEvent,
-            GesturePinchEndEvent, GesturePinchUpdateEvent, GestureSwipeBeginEvent, GestureSwipeEndEvent,
-            GestureSwipeUpdateEvent, GrabStartData as PointerGrabStartData, MotionEvent, PointerGrab,
-            PointerInnerHandle, RelativeMotionEvent,
+            AxisFrame, ButtonEvent, GestureHoldBeginEvent, GestureHoldEndEvent,
+            GesturePinchBeginEvent, GesturePinchEndEvent, GesturePinchUpdateEvent,
+            GestureSwipeBeginEvent, GestureSwipeEndEvent, GestureSwipeUpdateEvent,
+            GrabStartData as PointerGrabStartData, MotionEvent, PointerGrab, PointerInnerHandle,
+            RelativeMotionEvent,
         },
         touch::{GrabStartData as TouchGrabStartData, TouchGrab},
     },
@@ -21,20 +22,22 @@ use smithay::{utils::Rectangle, xwayland::xwm::ResizeEdge as X11ResizeEdge};
 use super::{SurfaceData, WindowElement};
 use crate::{
     focus::PointerFocusTarget,
-    state::{AnvilState, Backend},
+    state::{Backend, YawcState},
 };
 
 pub struct PointerMoveSurfaceGrab<BackendData: Backend + 'static> {
-    pub start_data: PointerGrabStartData<AnvilState<BackendData>>,
+    pub start_data: PointerGrabStartData<YawcState<BackendData>>,
     pub window: WindowElement,
     pub initial_window_location: Point<i32, Logical>,
 }
 
-impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveSurfaceGrab<BackendData> {
+impl<BackendData: Backend> PointerGrab<YawcState<BackendData>>
+    for PointerMoveSurfaceGrab<BackendData>
+{
     fn motion(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         _focus: Option<(PointerFocusTarget, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
@@ -50,8 +53,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn relative_motion(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         focus: Option<(PointerFocusTarget, Point<f64, Logical>)>,
         event: &RelativeMotionEvent,
     ) {
@@ -60,8 +63,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn button(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -73,8 +76,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn axis(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         details: AxisFrame,
     ) {
         handle.axis(data, details)
@@ -82,16 +85,16 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn frame(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
     ) {
         handle.frame(data);
     }
 
     fn gesture_swipe_begin(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureSwipeBeginEvent,
     ) {
         handle.gesture_swipe_begin(data, event);
@@ -99,8 +102,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_swipe_update(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureSwipeUpdateEvent,
     ) {
         handle.gesture_swipe_update(data, event);
@@ -108,8 +111,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_swipe_end(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureSwipeEndEvent,
     ) {
         handle.gesture_swipe_end(data, event);
@@ -117,8 +120,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_pinch_begin(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GesturePinchBeginEvent,
     ) {
         handle.gesture_pinch_begin(data, event);
@@ -126,8 +129,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_pinch_update(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GesturePinchUpdateEvent,
     ) {
         handle.gesture_pinch_update(data, event);
@@ -135,8 +138,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_pinch_end(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GesturePinchEndEvent,
     ) {
         handle.gesture_pinch_end(data, event);
@@ -144,8 +147,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_hold_begin(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureHoldBeginEvent,
     ) {
         handle.gesture_hold_begin(data, event);
@@ -153,33 +156,33 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerMoveS
 
     fn gesture_hold_end(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureHoldEndEvent,
     ) {
         handle.gesture_hold_end(data, event);
     }
 
-    fn start_data(&self) -> &PointerGrabStartData<AnvilState<BackendData>> {
+    fn start_data(&self) -> &PointerGrabStartData<YawcState<BackendData>> {
         &self.start_data
     }
 
-    fn unset(&mut self, _data: &mut AnvilState<BackendData>) {}
+    fn unset(&mut self, _data: &mut YawcState<BackendData>) {}
 }
 
 pub struct TouchMoveSurfaceGrab<BackendData: Backend + 'static> {
-    pub start_data: TouchGrabStartData<AnvilState<BackendData>>,
+    pub start_data: TouchGrabStartData<YawcState<BackendData>>,
     pub window: WindowElement,
     pub initial_window_location: Point<i32, Logical>,
 }
 
-impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchMoveSurfaceGrab<BackendData> {
+impl<BackendData: Backend> TouchGrab<YawcState<BackendData>> for TouchMoveSurfaceGrab<BackendData> {
     fn down(
         &mut self,
-        _data: &mut AnvilState<BackendData>,
-        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        _data: &mut YawcState<BackendData>,
+        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         _focus: Option<(
-            <AnvilState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
+            <YawcState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
             Point<f64, Logical>,
         )>,
         _event: &smithay::input::touch::DownEvent,
@@ -189,8 +192,8 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchMoveSurfa
 
     fn up(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         event: &smithay::input::touch::UpEvent,
         seq: Serial,
     ) {
@@ -204,10 +207,10 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchMoveSurfa
 
     fn motion(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         _focus: Option<(
-            <AnvilState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
+            <YawcState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
             Point<f64, Logical>,
         )>,
         event: &smithay::input::touch::MotionEvent,
@@ -225,16 +228,16 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchMoveSurfa
 
     fn frame(
         &mut self,
-        _data: &mut AnvilState<BackendData>,
-        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        _data: &mut YawcState<BackendData>,
+        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         _seq: Serial,
     ) {
     }
 
     fn cancel(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         seq: Serial,
     ) {
         handle.cancel(data, seq);
@@ -243,8 +246,8 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchMoveSurfa
 
     fn shape(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         event: &smithay::input::touch::ShapeEvent,
         seq: Serial,
     ) {
@@ -253,19 +256,19 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchMoveSurfa
 
     fn orientation(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         event: &smithay::input::touch::OrientationEvent,
         seq: Serial,
     ) {
         handle.orientation(data, event, seq);
     }
 
-    fn start_data(&self) -> &smithay::input::touch::GrabStartData<AnvilState<BackendData>> {
+    fn start_data(&self) -> &smithay::input::touch::GrabStartData<YawcState<BackendData>> {
         &self.start_data
     }
 
-    fn unset(&mut self, _data: &mut AnvilState<BackendData>) {}
+    fn unset(&mut self, _data: &mut YawcState<BackendData>) {}
 }
 
 bitflags::bitflags! {
@@ -340,7 +343,7 @@ pub enum ResizeState {
 }
 
 pub struct PointerResizeSurfaceGrab<BackendData: Backend + 'static> {
-    pub start_data: PointerGrabStartData<AnvilState<BackendData>>,
+    pub start_data: PointerGrabStartData<YawcState<BackendData>>,
     pub window: WindowElement,
     pub edges: ResizeEdge,
     pub initial_window_location: Point<i32, Logical>,
@@ -348,11 +351,13 @@ pub struct PointerResizeSurfaceGrab<BackendData: Backend + 'static> {
     pub last_window_size: Size<i32, Logical>,
 }
 
-impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResizeSurfaceGrab<BackendData> {
+impl<BackendData: Backend> PointerGrab<YawcState<BackendData>>
+    for PointerResizeSurfaceGrab<BackendData>
+{
     fn motion(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         _focus: Option<(PointerFocusTarget, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
@@ -401,8 +406,16 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
         let min_width = min_size.w.max(1);
         let min_height = min_size.h.max(1);
-        let max_width = if max_size.w == 0 { i32::MAX } else { max_size.w };
-        let max_height = if max_size.h == 0 { i32::MAX } else { max_size.h };
+        let max_width = if max_size.w == 0 {
+            i32::MAX
+        } else {
+            max_size.w
+        };
+        let max_height = if max_size.h == 0 {
+            i32::MAX
+        } else {
+            max_size.h
+        };
 
         new_window_width = new_window_width.max(min_width).min(max_width);
         new_window_height = new_window_height.max(min_height).min(max_height);
@@ -428,8 +441,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn relative_motion(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         focus: Option<(PointerFocusTarget, Point<f64, Logical>)>,
         event: &RelativeMotionEvent,
     ) {
@@ -438,8 +451,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn button(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -482,7 +495,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
                             .unwrap()
                             .borrow_mut();
                         if let ResizeState::Resizing(resize_data) = data.resize_state {
-                            data.resize_state = ResizeState::WaitingForFinalAck(resize_data, event.serial);
+                            data.resize_state =
+                                ResizeState::WaitingForFinalAck(resize_data, event.serial);
                         } else {
                             panic!("invalid resize state: {:?}", data.resize_state);
                         }
@@ -531,8 +545,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn axis(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         details: AxisFrame,
     ) {
         handle.axis(data, details)
@@ -540,16 +554,16 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn frame(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
     ) {
         handle.frame(data);
     }
 
     fn gesture_swipe_begin(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureSwipeBeginEvent,
     ) {
         handle.gesture_swipe_begin(data, event);
@@ -557,8 +571,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_swipe_update(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureSwipeUpdateEvent,
     ) {
         handle.gesture_swipe_update(data, event);
@@ -566,8 +580,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_swipe_end(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureSwipeEndEvent,
     ) {
         handle.gesture_swipe_end(data, event);
@@ -575,8 +589,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_pinch_begin(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GesturePinchBeginEvent,
     ) {
         handle.gesture_pinch_begin(data, event);
@@ -584,8 +598,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_pinch_update(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GesturePinchUpdateEvent,
     ) {
         handle.gesture_pinch_update(data, event);
@@ -593,8 +607,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_pinch_end(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GesturePinchEndEvent,
     ) {
         handle.gesture_pinch_end(data, event);
@@ -602,8 +616,8 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_hold_begin(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureHoldBeginEvent,
     ) {
         handle.gesture_hold_begin(data, event);
@@ -611,22 +625,22 @@ impl<BackendData: Backend> PointerGrab<AnvilState<BackendData>> for PointerResiz
 
     fn gesture_hold_end(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut PointerInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut PointerInnerHandle<'_, YawcState<BackendData>>,
         event: &GestureHoldEndEvent,
     ) {
         handle.gesture_hold_end(data, event);
     }
 
-    fn start_data(&self) -> &PointerGrabStartData<AnvilState<BackendData>> {
+    fn start_data(&self) -> &PointerGrabStartData<YawcState<BackendData>> {
         &self.start_data
     }
 
-    fn unset(&mut self, _data: &mut AnvilState<BackendData>) {}
+    fn unset(&mut self, _data: &mut YawcState<BackendData>) {}
 }
 
 pub struct TouchResizeSurfaceGrab<BackendData: Backend + 'static> {
-    pub start_data: TouchGrabStartData<AnvilState<BackendData>>,
+    pub start_data: TouchGrabStartData<YawcState<BackendData>>,
     pub window: WindowElement,
     pub edges: ResizeEdge,
     pub initial_window_location: Point<i32, Logical>,
@@ -634,13 +648,15 @@ pub struct TouchResizeSurfaceGrab<BackendData: Backend + 'static> {
     pub last_window_size: Size<i32, Logical>,
 }
 
-impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSurfaceGrab<BackendData> {
+impl<BackendData: Backend> TouchGrab<YawcState<BackendData>>
+    for TouchResizeSurfaceGrab<BackendData>
+{
     fn down(
         &mut self,
-        _data: &mut AnvilState<BackendData>,
-        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        _data: &mut YawcState<BackendData>,
+        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         _focus: Option<(
-            <AnvilState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
+            <YawcState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
             Point<f64, Logical>,
         )>,
         _event: &smithay::input::touch::DownEvent,
@@ -650,8 +666,8 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
 
     fn up(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         event: &smithay::input::touch::UpEvent,
         _seq: Serial,
     ) {
@@ -677,12 +693,12 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
                     let mut location = data.space.element_location(&self.window).unwrap();
 
                     if self.edges.intersects(ResizeEdge::LEFT) {
-                        location.x =
-                            self.initial_window_location.x + (self.initial_window_size.w - geometry.size.w);
+                        location.x = self.initial_window_location.x
+                            + (self.initial_window_size.w - geometry.size.w);
                     }
                     if self.edges.intersects(ResizeEdge::TOP) {
-                        location.y =
-                            self.initial_window_location.y + (self.initial_window_size.h - geometry.size.h);
+                        location.y = self.initial_window_location.y
+                            + (self.initial_window_size.h - geometry.size.h);
                     }
 
                     data.space.map_element(self.window.clone(), location, true);
@@ -695,7 +711,8 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
                         .unwrap()
                         .borrow_mut();
                     if let ResizeState::Resizing(resize_data) = data.resize_state {
-                        data.resize_state = ResizeState::WaitingForFinalAck(resize_data, event.serial);
+                        data.resize_state =
+                            ResizeState::WaitingForFinalAck(resize_data, event.serial);
                     } else {
                         panic!("invalid resize state: {:?}", data.resize_state);
                     }
@@ -708,12 +725,12 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
                     let geometry = self.window.geometry();
 
                     if self.edges.intersects(ResizeEdge::LEFT) {
-                        location.x =
-                            self.initial_window_location.x + (self.initial_window_size.w - geometry.size.w);
+                        location.x = self.initial_window_location.x
+                            + (self.initial_window_size.w - geometry.size.w);
                     }
                     if self.edges.intersects(ResizeEdge::TOP) {
-                        location.y =
-                            self.initial_window_location.y + (self.initial_window_size.h - geometry.size.h);
+                        location.y = self.initial_window_location.y
+                            + (self.initial_window_size.h - geometry.size.h);
                     }
 
                     data.space.map_element(self.window.clone(), location, true);
@@ -743,10 +760,10 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
 
     fn motion(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         _focus: Option<(
-            <AnvilState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
+            <YawcState<BackendData> as smithay::input::SeatHandler>::TouchFocus,
             Point<f64, Logical>,
         )>,
         event: &smithay::input::touch::MotionEvent,
@@ -798,8 +815,16 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
 
         let min_width = min_size.w.max(1);
         let min_height = min_size.h.max(1);
-        let max_width = if max_size.w == 0 { i32::MAX } else { max_size.w };
-        let max_height = if max_size.h == 0 { i32::MAX } else { max_size.h };
+        let max_width = if max_size.w == 0 {
+            i32::MAX
+        } else {
+            max_size.w
+        };
+        let max_height = if max_size.h == 0 {
+            i32::MAX
+        } else {
+            max_size.h
+        };
 
         new_window_width = new_window_width.max(min_width).min(max_width);
         new_window_height = new_window_height.max(min_height).min(max_height);
@@ -825,16 +850,16 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
 
     fn frame(
         &mut self,
-        _data: &mut AnvilState<BackendData>,
-        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        _data: &mut YawcState<BackendData>,
+        _handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         _seq: Serial,
     ) {
     }
 
     fn cancel(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         seq: Serial,
     ) {
         handle.cancel(data, seq);
@@ -843,8 +868,8 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
 
     fn shape(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         event: &smithay::input::touch::ShapeEvent,
         seq: Serial,
     ) {
@@ -853,17 +878,17 @@ impl<BackendData: Backend> TouchGrab<AnvilState<BackendData>> for TouchResizeSur
 
     fn orientation(
         &mut self,
-        data: &mut AnvilState<BackendData>,
-        handle: &mut smithay::input::touch::TouchInnerHandle<'_, AnvilState<BackendData>>,
+        data: &mut YawcState<BackendData>,
+        handle: &mut smithay::input::touch::TouchInnerHandle<'_, YawcState<BackendData>>,
         event: &smithay::input::touch::OrientationEvent,
         seq: Serial,
     ) {
         handle.orientation(data, event, seq);
     }
 
-    fn start_data(&self) -> &smithay::input::touch::GrabStartData<AnvilState<BackendData>> {
+    fn start_data(&self) -> &smithay::input::touch::GrabStartData<YawcState<BackendData>> {
         &self.start_data
     }
 
-    fn unset(&mut self, _data: &mut AnvilState<BackendData>) {}
+    fn unset(&mut self, _data: &mut YawcState<BackendData>) {}
 }

@@ -1,6 +1,10 @@
 use std::{convert::TryInto, process::Command, sync::atomic::Ordering};
 
-use crate::{AnvilState, focus::PointerFocusTarget, shell::FullscreenSurface};
+use crate::{
+    YawcState,
+    focus::{KeyboardFocusTarget, PointerFocusTarget},
+    shell::FullscreenSurface,
+};
 
 #[cfg(feature = "udev")]
 use crate::udev::UdevData;
@@ -65,19 +69,29 @@ use smithay::{
     },
 };
 
-impl<BackendData: Backend> AnvilState<BackendData> {
+impl<BackendData: Backend> YawcState<BackendData> {
     // Allow in this method because of existing usage
     #[allow(clippy::uninlined_format_args)]
     fn process_common_key_action(&mut self, action: KeyAction) {
         match action {
-            KeyAction::None => (),
-
-            KeyAction::Quit => {
+            KeyAction::Exit => {
                 info!("Quitting.");
                 self.running.store(false, Ordering::SeqCst);
             }
 
-            KeyAction::Run(cmd) => {
+            KeyAction::DestroyFocusedClient => {
+                info!("Quitting focused surface.");
+                if let Some(keyboard) = self.seat.get_keyboard() {
+                    if let Some(KeyboardFocusTarget::Window(window)) = keyboard.current_focus() {
+                        match window.underlying_surface() {
+                            smithay::desktop::WindowSurface::Wayland(w) => w.send_close(),
+                            smithay::desktop::WindowSurface::X11(w) => _ = w.close(),
+                        }
+                    }
+                }
+            }
+
+            KeyAction::Exec(cmd) => {
                 info!(cmd, "Starting program");
 
                 if let Err(e) = Command::new(&cmd)
@@ -130,10 +144,7 @@ impl<BackendData: Backend> AnvilState<BackendData> {
                 }
             }
 
-            _ => unreachable!(
-                "Common key action handler encountered backend specific action {:?}",
-                action
-            ),
+            _ => (),
         }
     }
 
@@ -460,7 +471,7 @@ impl<BackendData: Backend> AnvilState<BackendData> {
 }
 
 #[cfg(any(feature = "winit", feature = "x11"))]
-impl<BackendData: Backend> AnvilState<BackendData> {
+impl<BackendData: Backend> YawcState<BackendData> {
     pub fn process_input_event_windowed<B: InputBackend>(
         &mut self,
         event: InputEvent<B>,
@@ -537,8 +548,9 @@ impl<BackendData: Backend> AnvilState<BackendData> {
 
                 action => match action {
                     KeyAction::None
-                    | KeyAction::Quit
-                    | KeyAction::Run(_)
+                    | KeyAction::Exit
+                    | KeyAction::DestroyFocusedClient
+                    | KeyAction::Exec(_)
                     | KeyAction::TogglePreview
                     | KeyAction::ToggleDecorations => self.process_common_key_action(action),
 
@@ -561,7 +573,7 @@ impl<BackendData: Backend> AnvilState<BackendData> {
             }
             InputEvent::PointerButton { event } => self.on_pointer_button::<B>(event),
             InputEvent::PointerAxis { event } => self.on_pointer_axis::<B>(event),
-            _ => (), // other events are not handled in anvil (yet)
+            _ => (), // other events are not handled in yawc (yet)
         }
     }
 
@@ -605,7 +617,7 @@ impl<BackendData: Backend> AnvilState<BackendData> {
 }
 
 #[cfg(feature = "udev")]
-impl AnvilState<UdevData> {
+impl YawcState<UdevData> {
     pub fn process_input_event<B: InputBackend>(
         &mut self,
         dh: &DisplayHandle,
@@ -771,8 +783,9 @@ impl AnvilState<UdevData> {
 
                 action => match action {
                     KeyAction::None
-                    | KeyAction::Quit
-                    | KeyAction::Run(_)
+                    | KeyAction::Exit
+                    | KeyAction::DestroyFocusedClient
+                    | KeyAction::Exec(_)
                     | KeyAction::TogglePreview
                     | KeyAction::ToggleDecorations => self.process_common_key_action(action),
 
@@ -834,7 +847,7 @@ impl AnvilState<UdevData> {
                 }
             }
             _ => {
-                // other events are not handled in anvil (yet)
+                // other events are not handled in yawc (yet)
             }
         }
     }
@@ -1346,12 +1359,11 @@ impl AnvilState<UdevData> {
 #[allow(dead_code)] // some of these are only read if udev is enabled
 #[derive(Debug, PartialEq)]
 enum KeyAction {
-    /// Quit the compositor
-    Quit,
+    Exit,
+    DestroyFocusedClient,
     /// Trigger a vt-switch
     VtSwitch(i32),
-    /// run a command
-    Run(String),
+    Exec(String),
     /// Switch the current screen
     Screen(usize),
     ScaleUp,
@@ -1366,33 +1378,36 @@ enum KeyAction {
 
 fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAction {
     use KeyAction::*;
-    if modifiers.ctrl && modifiers.alt && keysym == Keysym::BackSpace
-        || modifiers.logo && keysym == Keysym::q
-    {
-        // ctrl+alt+backspace = quit
-        // logo + q = quit
-        Quit
-    } else if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12).contains(&keysym.raw()) {
-        // VTSwitch
-        VtSwitch((keysym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
-    } else if modifiers.logo && keysym == Keysym::Return {
-        // run terminal
-        Run("alacritty".into())
-    } else if modifiers.logo && (xkb::KEY_1..=xkb::KEY_9).contains(&keysym.raw()) {
-        Screen((keysym.raw() - xkb::KEY_1) as usize)
-    } else if modifiers.logo && modifiers.shift && keysym == Keysym::M {
-        ScaleDown
-    } else if modifiers.logo && modifiers.shift && keysym == Keysym::P {
-        ScaleUp
-    } else if modifiers.logo && modifiers.shift && keysym == Keysym::W {
-        TogglePreview
-    } else if modifiers.logo && modifiers.shift && keysym == Keysym::R {
-        RotateOutput
-    } else if modifiers.logo && modifiers.shift && keysym == Keysym::T {
-        ToggleTint
-    } else if modifiers.logo && modifiers.shift && keysym == Keysym::D {
-        ToggleDecorations
-    } else {
-        None
+
+    println!(
+        "LOGO: {:?}\nSHIFT: {:?}\nKEYSYM: {:?}",
+        modifiers.logo, modifiers.shift, keysym
+    );
+
+    match (modifiers.logo, modifiers.shift, keysym) {
+        // FIXME: true, false, _ will not work?
+        // Actual keybind should just be Meta + Q but you see the problem with
+        // what we have as keybinds right now; and this issue at stake.
+        (true, true, Keysym::E) => DestroyFocusedClient,
+        (true, true, Keysym::Q) => Exit,
+
+        (true, _, Keysym::Return) => Exec("alacritty".into()),
+
+        (true, true, Keysym::M) => ScaleDown,
+        (true, true, Keysym::P) => ScaleUp,
+        (true, true, Keysym::W) => TogglePreview,
+        (true, true, Keysym::R) => RotateOutput,
+        (true, true, Keysym::T) => ToggleTint,
+        (true, true, Keysym::D) => ToggleDecorations,
+
+        _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12).contains(&keysym.raw()) => {
+            VtSwitch((keysym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
+        }
+
+        _ if modifiers.logo && (xkb::KEY_1..=xkb::KEY_9).contains(&keysym.raw()) => {
+            Screen((keysym.raw() - xkb::KEY_1) as usize)
+        }
+
+        _ => None,
     }
 }

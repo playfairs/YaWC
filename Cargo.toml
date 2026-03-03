@@ -1,7 +1,7 @@
 [package]
 authors = ["Invra <identificationsucks@gmail.com>"]
 edition = "2024"
-license = "MIT"
+license = "AGPL-3.0"
 name = "yawc"
 publish = false
 version = "0.0.1"

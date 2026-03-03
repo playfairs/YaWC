@@ -1,10 +1,10 @@
 use smithay::{
     backend::renderer::{
-        element::{
-            solid::{SolidColorBuffer, SolidColorRenderElement},
-            AsRenderElements, Kind,
-        },
         Renderer,
+        element::{
+            AsRenderElements, Kind,
+            solid::{SolidColorBuffer, SolidColorRenderElement},
+        },
     },
     desktop::WindowSurface,
     input::Seat,
@@ -14,7 +14,7 @@ use smithay::{
 
 use std::cell::{RefCell, RefMut};
 
-use crate::{state::Backend, AnvilState};
+use crate::{YawcState, state::Backend};
 
 use super::WindowElement;
 
@@ -55,8 +55,8 @@ impl HeaderBar {
 
     pub fn clicked<BackendData: Backend>(
         &mut self,
-        seat: &Seat<AnvilState<BackendData>>,
-        state: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        state: &mut YawcState<BackendData>,
         window: &WindowElement,
         serial: Serial,
     ) {
@@ -66,7 +66,7 @@ impl HeaderBar {
                     WindowSurface::Wayland(w) => w.send_close(),
                     #[cfg(feature = "xwayland")]
                     WindowSurface::X11(w) => {
-                        let _ = w.close();
+                        _ = w.close();
                     }
                 };
             }
@@ -84,16 +84,16 @@ impl HeaderBar {
             }
             Some(_) => {
                 match window.0.underlying_surface() {
-                    WindowSurface::Wayland(w) => {
+                    WindowSurface::Wayland(window) => {
                         let seat = seat.clone();
-                        let toplevel = w.clone();
-                        state
-                            .handle
-                            .insert_idle(move |data| data.move_request_xdg(&toplevel, &seat, serial));
+                        let toplevel = window.clone();
+                        state.handle.insert_idle(move |data| {
+                            data.move_request_xdg(&toplevel, &seat, serial)
+                        });
                     }
                     #[cfg(feature = "xwayland")]
-                    WindowSurface::X11(w) => {
-                        let window = w.clone();
+                    WindowSurface::X11(window) => {
+                        let window = window.clone();
                         state
                             .handle
                             .insert_idle(move |data| data.move_request_x11(&window));
@@ -106,8 +106,8 @@ impl HeaderBar {
 
     pub fn touch_down<BackendData: Backend>(
         &mut self,
-        seat: &Seat<AnvilState<BackendData>>,
-        state: &mut AnvilState<BackendData>,
+        seat: &Seat<YawcState<BackendData>>,
+        state: &mut YawcState<BackendData>,
         window: &WindowElement,
         serial: Serial,
     ) {
@@ -119,9 +119,9 @@ impl HeaderBar {
                     WindowSurface::Wayland(w) => {
                         let seat = seat.clone();
                         let toplevel = w.clone();
-                        state
-                            .handle
-                            .insert_idle(move |data| data.move_request_xdg(&toplevel, &seat, serial));
+                        state.handle.insert_idle(move |data| {
+                            data.move_request_xdg(&toplevel, &seat, serial)
+                        });
                     }
                     #[cfg(feature = "xwayland")]
                     WindowSurface::X11(w) => {
@@ -138,8 +138,8 @@ impl HeaderBar {
 
     pub fn touch_up<BackendData: Backend>(
         &mut self,
-        _seat: &Seat<AnvilState<BackendData>>,
-        state: &mut AnvilState<BackendData>,
+        _seat: &Seat<YawcState<BackendData>>,
+        state: &mut YawcState<BackendData>,
         window: &WindowElement,
         _serial: Serial,
     ) {
@@ -149,7 +149,7 @@ impl HeaderBar {
                     WindowSurface::Wayland(w) => w.send_close(),
                     #[cfg(feature = "xwayland")]
                     WindowSurface::X11(w) => {
-                        let _ = w.close();
+                        _ = w.close();
                     }
                 };
             }
@@ -191,8 +191,10 @@ impl HeaderBar {
             .unwrap_or(false)
             && (needs_redraw_buttons || !self.close_button_hover)
         {
-            self.close_button
-                .update((BUTTON_WIDTH as i32, BUTTON_HEIGHT as i32), CLOSE_COLOR_HOVER);
+            self.close_button.update(
+                (BUTTON_WIDTH as i32, BUTTON_HEIGHT as i32),
+                CLOSE_COLOR_HOVER,
+            );
             self.close_button_hover = true;
         } else if !self
             .pointer_loc
@@ -209,7 +211,9 @@ impl HeaderBar {
         if self
             .pointer_loc
             .as_ref()
-            .map(|l| l.x >= (width - BUTTON_WIDTH * 2) as f64 && l.x <= (width - BUTTON_WIDTH) as f64)
+            .map(|l| {
+                l.x >= (width - BUTTON_WIDTH * 2) as f64 && l.x <= (width - BUTTON_WIDTH) as f64
+            })
             .unwrap_or(false)
             && (needs_redraw_buttons || !self.maximize_button_hover)
         {
@@ -219,7 +223,9 @@ impl HeaderBar {
         } else if !self
             .pointer_loc
             .as_ref()
-            .map(|l| l.x >= (width - BUTTON_WIDTH * 2) as f64 && l.x <= (width - BUTTON_WIDTH) as f64)
+            .map(|l| {
+                l.x >= (width - BUTTON_WIDTH * 2) as f64 && l.x <= (width - BUTTON_WIDTH) as f64
+            })
             .unwrap_or(false)
             && (needs_redraw_buttons || self.maximize_button_hover)
         {
@@ -254,14 +260,22 @@ impl<R: Renderer> AsRenderElements<R> for HeaderBar {
             .into(),
             SolidColorRenderElement::from_buffer(
                 &self.maximize_button,
-                location + (header_end_offset - button_offset.upscale(2)).to_physical_precise_round(scale),
+                location
+                    + (header_end_offset - button_offset.upscale(2))
+                        .to_physical_precise_round(scale),
                 scale,
                 alpha,
                 Kind::Unspecified,
             )
             .into(),
-            SolidColorRenderElement::from_buffer(&self.background, location, scale, alpha, Kind::Unspecified)
-                .into(),
+            SolidColorRenderElement::from_buffer(
+                &self.background,
+                location,
+                scale,
+                alpha,
+                Kind::Unspecified,
+            )
+            .into(),
         ]
     }
 }

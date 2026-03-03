@@ -1,12 +1,13 @@
 use std::{cell::RefCell, os::unix::io::OwnedFd};
 
 use smithay::{
-    desktop::{space::SpaceElement, Window},
+    desktop::{Window, space::SpaceElement},
     input::pointer::Focus,
     utils::{Logical, Rectangle, SERIAL_COUNTER},
     wayland::{
         compositor::with_states,
         selection::{
+            SelectionTarget,
             data_device::{
                 clear_data_device_selection, current_data_device_selection_userdata,
                 request_data_device_client_selection, set_data_device_selection,
@@ -15,22 +16,21 @@ use smithay::{
                 clear_primary_selection, current_primary_selection_userdata,
                 request_primary_client_selection, set_primary_selection,
             },
-            SelectionTarget,
         },
         xwayland_shell::{XWaylandShellHandler, XWaylandShellState},
     },
     xwayland::{
-        xwm::{Reorder, ResizeEdge as X11ResizeEdge, XwmId},
         X11Surface, X11Wm, XwmHandler,
+        xwm::{Reorder, ResizeEdge as X11ResizeEdge, XwmId},
     },
 };
 use tracing::{error, trace};
 
-use crate::{focus::KeyboardFocusTarget, state::Backend, AnvilState};
+use crate::{YawcState, focus::KeyboardFocusTarget, state::Backend};
 
 use super::{
-    place_new_window, FullscreenSurface, PointerMoveSurfaceGrab, PointerResizeSurfaceGrab, ResizeData,
-    ResizeState, SurfaceData, TouchMoveSurfaceGrab, WindowElement,
+    FullscreenSurface, PointerMoveSurfaceGrab, PointerResizeSurfaceGrab, ResizeData, ResizeState,
+    SurfaceData, TouchMoveSurfaceGrab, WindowElement, place_new_window,
 };
 
 #[derive(Debug, Default)]
@@ -45,13 +45,13 @@ impl OldGeometry {
     }
 }
 
-impl<BackendData: Backend> XWaylandShellHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> XWaylandShellHandler for YawcState<BackendData> {
     fn xwayland_shell_state(&mut self) -> &mut XWaylandShellState {
         &mut self.xwayland_shell_state
     }
 }
 
-impl<BackendData: Backend> XwmHandler for AnvilState<BackendData> {
+impl<BackendData: Backend> XwmHandler for YawcState<BackendData> {
     fn xwm_state(&mut self, _xwm: XwmId) -> &mut X11Wm {
         self.xwm.as_mut().unwrap()
     }
@@ -62,7 +62,12 @@ impl<BackendData: Backend> XwmHandler for AnvilState<BackendData> {
     fn map_window_request(&mut self, _xwm: XwmId, window: X11Surface) {
         window.set_mapped(true).unwrap();
         let window = WindowElement(Window::new_x11_window(window));
-        place_new_window(&mut self.space, self.pointer.current_location(), &window, true);
+        place_new_window(
+            &mut self.space,
+            self.pointer.current_location(),
+            &window,
+            true,
+        );
         let bbox = self.space.element_bbox(&window).unwrap();
         let Some(xsurface) = window.0.x11_surface() else {
             unreachable!()
@@ -177,7 +182,9 @@ impl<BackendData: Backend> XwmHandler for AnvilState<BackendData> {
             window.set_fullscreen(true).unwrap();
             elem.set_ssd(false);
             window.configure(geometry).unwrap();
-            output.user_data().insert_if_missing(FullscreenSurface::default);
+            output
+                .user_data()
+                .insert_if_missing(FullscreenSurface::default);
             output
                 .user_data()
                 .get::<FullscreenSurface>()
@@ -203,15 +210,25 @@ impl<BackendData: Backend> XwmHandler for AnvilState<BackendData> {
                     .unwrap_or(false)
             }) {
                 trace!("Unfullscreening: {:?}", elem);
-                output.user_data().get::<FullscreenSurface>().unwrap().clear();
+                output
+                    .user_data()
+                    .get::<FullscreenSurface>()
+                    .unwrap()
+                    .clear();
                 window.configure(self.space.element_bbox(elem)).unwrap();
                 self.backend_data.reset_buffers(output);
             }
         }
     }
 
-    fn resize_request(&mut self, _xwm: XwmId, window: X11Surface, _button: u32, edges: X11ResizeEdge) {
-        // luckily anvil only supports one seat anyway...
+    fn resize_request(
+        &mut self,
+        _xwm: XwmId,
+        window: X11Surface,
+        _button: u32,
+        edges: X11ResizeEdge,
+    ) {
+        // luckily yawc only supports one seat anyway...
         let start_data = self.pointer.grab_start_data().unwrap();
 
         let Some(element) = self
@@ -270,11 +287,20 @@ impl<BackendData: Backend> XwmHandler for AnvilState<BackendData> {
         false
     }
 
-    fn send_selection(&mut self, _xwm: XwmId, selection: SelectionTarget, mime_type: String, fd: OwnedFd) {
+    fn send_selection(
+        &mut self,
+        _xwm: XwmId,
+        selection: SelectionTarget,
+        mime_type: String,
+        fd: OwnedFd,
+    ) {
         match selection {
             SelectionTarget::Clipboard => {
                 if let Err(err) = request_data_device_client_selection(&self.seat, mime_type, fd) {
-                    error!(?err, "Failed to request current wayland clipboard for Xwayland",);
+                    error!(
+                        ?err,
+                        "Failed to request current wayland clipboard for Xwayland",
+                    );
                 }
             }
             SelectionTarget::Primary => {
@@ -321,7 +347,7 @@ impl<BackendData: Backend> XwmHandler for AnvilState<BackendData> {
     }
 }
 
-impl<BackendData: Backend> AnvilState<BackendData> {
+impl<BackendData: Backend> YawcState<BackendData> {
     pub fn maximize_request_x11(&mut self, window: &X11Surface) {
         let Some(elem) = self
             .space
@@ -345,7 +371,11 @@ impl<BackendData: Backend> AnvilState<BackendData> {
         window.set_maximized(true).unwrap();
         window.configure(geometry).unwrap();
         window.user_data().insert_if_missing(OldGeometry::default);
-        window.user_data().get::<OldGeometry>().unwrap().save(old_geo);
+        window
+            .user_data()
+            .get::<OldGeometry>()
+            .unwrap()
+            .save(old_geo);
         self.space.map_element(elem, geometry.loc, false);
     }
 
@@ -388,7 +418,7 @@ impl<BackendData: Backend> AnvilState<BackendData> {
             }
         }
 
-        // luckily anvil only supports one seat anyway...
+        // luckily yawc only supports one seat anyway...
         let Some(start_data) = self.pointer.grab_start_data() else {
             return;
         };

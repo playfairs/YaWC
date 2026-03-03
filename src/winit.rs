@@ -47,7 +47,7 @@ use smithay::{
 };
 use tracing::{error, info, warn};
 
-use crate::state::{take_presentation_feedback, AnvilState, Backend};
+use crate::state::{take_presentation_feedback, YawcState, Backend};
 use crate::{drawing::*, render::*};
 
 pub const OUTPUT_NAME: &str = "winit";
@@ -61,7 +61,7 @@ pub struct WinitData {
     pub fps: fps_ticker::Fps,
 }
 
-impl DmabufHandler for AnvilState<WinitData> {
+impl DmabufHandler for YawcState<WinitData> {
     fn dmabuf_state(&mut self) -> &mut DmabufState {
         &mut self.backend_data.dmabuf_state.0
     }
@@ -74,13 +74,13 @@ impl DmabufHandler for AnvilState<WinitData> {
             .import_dmabuf(&dmabuf, None)
             .is_ok()
         {
-            let _ = notifier.successful::<AnvilState<WinitData>>();
+            let _ = notifier.successful::<YawcState<WinitData>>();
         } else {
             notifier.failed();
         }
     }
 }
-delegate_dmabuf!(AnvilState<WinitData>);
+delegate_dmabuf!(YawcState<WinitData>);
 
 impl Backend for WinitData {
     fn seat_name(&self) -> String {
@@ -122,7 +122,7 @@ pub fn run_winit() {
             serial_number: "Unknown".into(),
         },
     );
-    let _global = output.create_global::<AnvilState<WinitData>>(&display.handle());
+    let _global = output.create_global::<YawcState<WinitData>>(&display.handle());
     output.change_current_state(Some(mode), Some(Transform::Flipped180), None, Some((0, 0).into()));
     output.set_preferred(mode);
 
@@ -170,7 +170,7 @@ pub fn run_winit() {
     // Note: egl on Mesa requires either v4 or wl_drm (initialized with bind_wl_display)
     let dmabuf_state = if let Some(default_feedback) = dmabuf_default_feedback {
         let mut dmabuf_state = DmabufState::new();
-        let dmabuf_global = dmabuf_state.create_global_with_default_feedback::<AnvilState<WinitData>>(
+        let dmabuf_global = dmabuf_state.create_global_with_default_feedback::<YawcState<WinitData>>(
             &display.handle(),
             &default_feedback,
         );
@@ -179,7 +179,7 @@ pub fn run_winit() {
         let dmabuf_formats = backend.renderer().dmabuf_formats();
         let mut dmabuf_state = DmabufState::new();
         let dmabuf_global =
-            dmabuf_state.create_global::<AnvilState<WinitData>>(&display.handle(), dmabuf_formats);
+            dmabuf_state.create_global::<YawcState<WinitData>>(&display.handle(), dmabuf_formats);
         (dmabuf_state, dmabuf_global, None)
     };
 
@@ -200,7 +200,7 @@ pub fn run_winit() {
             fps: fps_ticker::Fps::default(),
         }
     };
-    let mut state = AnvilState::init(display, event_loop.handle(), data, true);
+    let mut state = YawcState::init(display, event_loop.handle(), data, true);
     state
         .shm_state
         .update_formats(state.backend_data.backend.renderer().shm_formats());

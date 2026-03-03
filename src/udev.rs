@@ -13,7 +13,7 @@ use crate::{
     drawing::*,
     render::*,
     shell::WindowElement,
-    state::{AnvilState, Backend, take_presentation_feedback, update_primary_scanout_output},
+    state::{YawcState, Backend, take_presentation_feedback, update_primary_scanout_output},
 };
 use crate::{
     shell::WindowRenderElement,
@@ -164,7 +164,7 @@ impl UdevData {
     }
 }
 
-impl DmabufHandler for AnvilState<UdevData> {
+impl DmabufHandler for YawcState<UdevData> {
     fn dmabuf_state(&mut self) -> &mut DmabufState {
         &mut self.backend_data.dmabuf_state.as_mut().unwrap().0
     }
@@ -183,13 +183,13 @@ impl DmabufHandler for AnvilState<UdevData> {
             .is_ok()
         {
             dmabuf.set_node(self.backend_data.primary_gpu);
-            let _ = notifier.successful::<AnvilState<UdevData>>();
+            let _ = notifier.successful::<YawcState<UdevData>>();
         } else {
             notifier.failed();
         }
     }
 }
-delegate_dmabuf!(AnvilState<UdevData>);
+delegate_dmabuf!(YawcState<UdevData>);
 
 impl Backend for UdevData {
     const HAS_RELATIVE_MOTION: bool = true;
@@ -241,7 +241,7 @@ pub fn run_udev() {
     /*
      * Initialize the compositor
      */
-    let primary_gpu = if let Ok(var) = std::env::var("ANVIL_DRM_DEVICE") {
+    let primary_gpu = if let Ok(var) = std::env::var("YAWC_DRM_DEVICE") {
         DrmNode::from_path(var).expect("Invalid drm device path")
     } else {
         primary_gpu(session.seat())
@@ -265,7 +265,7 @@ pub fn run_udev() {
     let gpus = GpuManager::new(GbmGlesBackend::with_factory(|display| {
         let context = EGLContext::new_with_priority(display, ContextPriority::High)?;
         let mut capabilities = unsafe { GlesRenderer::supported_capabilities(&context)? };
-        if std::env::var("ANVIL_GLES_DISABLE_INSTANCING").is_ok() {
+        if std::env::var("YAWC_GLES_DISABLE_INSTANCING").is_ok() {
             capabilities.retain(|capability| *capability != Capability::Instancing);
         }
         Ok(unsafe { GlesRenderer::with_capabilities(context, capabilities)? })
@@ -288,7 +288,7 @@ pub fn run_udev() {
         debug_flags: DebugFlags::empty(),
         keyboards: Vec::new(),
     };
-    let mut state = AnvilState::init(display, event_loop.handle(), data, true);
+    let mut state = YawcState::init(display, event_loop.handle(), data, true);
 
     /*
      * Initialize the udev backend
@@ -377,7 +377,7 @@ pub fn run_udev() {
                         .activate(false)
                         .expect("failed to activate drm backend");
                     if let Some(lease_global) = backend.leasing_global.as_mut() {
-                        lease_global.resume::<AnvilState<UdevData>>();
+                        lease_global.resume::<YawcState<UdevData>>();
                     }
                     data.handle
                         .insert_idle(move |data| data.render(node, None, data.clock.now()));
@@ -476,7 +476,7 @@ pub fn run_udev() {
         .build()
         .unwrap();
     let mut dmabuf_state = DmabufState::new();
-    let global = dmabuf_state.create_global_with_default_feedback::<AnvilState<UdevData>>(
+    let global = dmabuf_state.create_global_with_default_feedback::<YawcState<UdevData>>(
         &display_handle,
         &default_feedback,
     );
@@ -515,7 +515,7 @@ pub fn run_udev() {
             let import_device = backend.drm_output_manager.device().device_fd().clone();
             if supports_syncobj_eventfd(&import_device) {
                 let syncobj_state =
-                    DrmSyncobjState::new::<AnvilState<UdevData>>(&display_handle, import_device);
+                    DrmSyncobjState::new::<YawcState<UdevData>>(&display_handle, import_device);
                 state.backend_data.syncobj_state = Some(syncobj_state);
             }
         }
@@ -567,7 +567,7 @@ pub fn run_udev() {
     }
 }
 
-impl DrmLeaseHandler for AnvilState<UdevData> {
+impl DrmLeaseHandler for YawcState<UdevData> {
     fn drm_lease_state(&mut self, node: DrmNode) -> &mut DrmLeaseState {
         self.backend_data
             .backends
@@ -640,14 +640,14 @@ impl DrmLeaseHandler for AnvilState<UdevData> {
     }
 }
 
-delegate_drm_lease!(AnvilState<UdevData>);
+delegate_drm_lease!(YawcState<UdevData>);
 
-impl DrmSyncobjHandler for AnvilState<UdevData> {
+impl DrmSyncobjHandler for YawcState<UdevData> {
     fn drm_syncobj_state(&mut self) -> Option<&mut DrmSyncobjState> {
         self.backend_data.syncobj_state.as_mut()
     }
 }
-smithay::delegate_drm_syncobj!(AnvilState<UdevData>);
+smithay::delegate_drm_syncobj!(YawcState<UdevData>);
 
 pub type RenderSurface =
     GbmBufferedSurface<GbmAllocator<DrmDeviceFd>, Option<OutputPresentationFeedback>>;
@@ -685,7 +685,7 @@ impl Drop for SurfaceData {
     fn drop(&mut self) {
         self.output.leave_all();
         if let Some(global) = self.global.take() {
-            self.dh.remove_global::<AnvilState<UdevData>>(global);
+            self.dh.remove_global::<YawcState<UdevData>>(global);
         }
     }
 }
@@ -787,7 +787,7 @@ fn get_surface_dmabuf_feedback(
     })
 }
 
-impl AnvilState<UdevData> {
+impl YawcState<UdevData> {
     fn device_added(&mut self, node: DrmNode, path: &Path) -> Result<(), DeviceAddError> {
         // Try to open the device
         let fd = self
@@ -809,7 +809,7 @@ impl AnvilState<UdevData> {
             .handle
             .insert_source(
                 notifier,
-                move |event, metadata, data: &mut AnvilState<_>| match event {
+                move |event, metadata, data: &mut YawcState<_>| match event {
                     DrmEvent::VBlank(crtc) => {
                         profiling::scope!("vblank", &format!("{crtc:?}"));
                         data.frame_finish(node, crtc, metadata);
@@ -873,7 +873,7 @@ impl AnvilState<UdevData> {
 
         let framebuffer_exporter = GbmFramebufferExporter::new(gbm.clone(), render_node.into());
 
-        let color_formats = if std::env::var("ANVIL_DISABLE_10BIT").is_ok() {
+        let color_formats = if std::env::var("YAWC_DISABLE_10BIT").is_ok() {
             SUPPORTED_FORMATS_8BIT_ONLY
         } else {
             SUPPORTED_FORMATS
@@ -910,7 +910,7 @@ impl AnvilState<UdevData> {
                 non_desktop_connectors: Vec::new(),
                 render_node,
                 surfaces: HashMap::new(),
-                leasing_global: DrmLeaseState::new::<AnvilState<UdevData>>(
+                leasing_global: DrmLeaseState::new::<YawcState<UdevData>>(
                     &self.display_handle,
                     &node,
                 )
@@ -998,7 +998,7 @@ impl AnvilState<UdevData> {
                 .non_desktop_connectors
                 .push((connector.handle(), crtc));
             if let Some(lease_state) = device.leasing_global.as_mut() {
-                lease_state.add_connector::<AnvilState<UdevData>>(
+                lease_state.add_connector::<YawcState<UdevData>>(
                     connector.handle(),
                     output_name,
                     format!("{make} {model}"),
@@ -1025,7 +1025,7 @@ impl AnvilState<UdevData> {
                     serial_number,
                 },
             );
-            let global = output.create_global::<AnvilState<UdevData>>(&self.display_handle);
+            let global = output.create_global::<YawcState<UdevData>>(&self.display_handle);
 
             let x = self.space.outputs().fold(0, |acc, o| {
                 acc + self.space.output_geometry(o).unwrap().size.w
@@ -1094,7 +1094,7 @@ impl AnvilState<UdevData> {
                 }
             };
 
-            let disable_direct_scanout = std::env::var("ANVIL_DISABLE_DIRECT_SCANOUT").is_ok();
+            let disable_direct_scanout = std::env::var("YAWC_DISABLE_DIRECT_SCANOUT").is_ok();
 
             let dmabuf_feedback = drm_output.with_compositor(|compositor| {
                 compositor.set_debug_flags(self.backend_data.debug_flags);
@@ -1243,7 +1243,7 @@ impl AnvilState<UdevData> {
         // drop the backends on this side
         if let Some(mut backend_data) = self.backend_data.backends.remove(&node) {
             if let Some(mut leasing_global) = backend_data.leasing_global.take() {
-                leasing_global.disable_global::<AnvilState<UdevData>>();
+                leasing_global.disable_global::<YawcState<UdevData>>();
             }
 
             if let Some(render_node) = backend_data.render_node {

@@ -6,7 +6,7 @@ use std::{
 use crate::{
     drawing::*,
     render::*,
-    state::{take_presentation_feedback, AnvilState, Backend},
+    state::{take_presentation_feedback, YawcState, Backend},
 };
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
@@ -70,20 +70,20 @@ pub struct X11Data {
     fps: fps_ticker::Fps,
 }
 
-impl DmabufHandler for AnvilState<X11Data> {
+impl DmabufHandler for YawcState<X11Data> {
     fn dmabuf_state(&mut self) -> &mut DmabufState {
         &mut self.backend_data.dmabuf_state
     }
 
     fn dmabuf_imported(&mut self, _global: &DmabufGlobal, dmabuf: Dmabuf, notifier: ImportNotifier) {
         if self.backend_data.renderer.import_dmabuf(&dmabuf, None).is_ok() {
-            let _ = notifier.successful::<AnvilState<X11Data>>();
+            let _ = notifier.successful::<YawcState<X11Data>>();
         } else {
             notifier.failed();
         }
     }
 }
-delegate_dmabuf!(AnvilState<X11Data>);
+delegate_dmabuf!(YawcState<X11Data>);
 
 impl Backend for X11Data {
     fn seat_name(&self) -> String {
@@ -117,11 +117,11 @@ pub fn run_x11() {
     let context = EGLContext::new(&egl).expect("Failed to create EGLContext");
 
     let window = WindowBuilder::new()
-        .title("Anvil")
+        .title("YaWC")
         .build(&handle)
         .expect("Failed to create first window");
 
-    let skip_vulkan = std::env::var("ANVIL_NO_VULKAN")
+    let skip_vulkan = std::env::var("YAWC_NO_VULKAN")
         .map(|x| {
             x == "1" || x.to_lowercase() == "true" || x.to_lowercase() == "yes" || x.to_lowercase() == "y"
         })
@@ -188,7 +188,7 @@ pub fn run_x11() {
         .build()
         .unwrap();
     let mut dmabuf_state = DmabufState::new();
-    let dmabuf_global = dmabuf_state.create_global_with_default_feedback::<AnvilState<X11Data>>(
+    let dmabuf_global = dmabuf_state.create_global_with_default_feedback::<YawcState<X11Data>>(
         &display.handle(),
         &dmabuf_default_feedback,
     );
@@ -231,7 +231,7 @@ pub fn run_x11() {
             serial_number: "Unknown".into(),
         },
     );
-    let _global = output.create_global::<AnvilState<X11Data>>(&display.handle());
+    let _global = output.create_global::<YawcState<X11Data>>(&display.handle());
     output.change_current_state(Some(mode), None, None, Some((0, 0).into()));
     output.set_preferred(mode);
 
@@ -250,7 +250,7 @@ pub fn run_x11() {
         fps: fps_ticker::Fps::default(),
     };
 
-    let mut state = AnvilState::init(display, event_loop.handle(), data, true);
+    let mut state = YawcState::init(display, event_loop.handle(), data, true);
     state
         .shm_state
         .update_formats(state.backend_data.renderer.shm_formats());
