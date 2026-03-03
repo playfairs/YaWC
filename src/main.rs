@@ -3,6 +3,12 @@
 static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
     profiling::tracy_client::ProfiledAllocator::new(std::alloc::System, 10);
 
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(version)]
+struct Args {}
+
 fn main() {
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
         tracing_subscriber::fmt()
@@ -12,6 +18,8 @@ fn main() {
     } else {
         tracing_subscriber::fmt().compact().init();
     }
+
+    let _args = Args::parse();
 
     #[cfg(feature = "profile-with-tracy")]
     profiling::tracy_client::Client::start();
