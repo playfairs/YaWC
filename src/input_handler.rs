@@ -1379,13 +1379,8 @@ enum KeyAction {
 fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAction {
     use KeyAction::*;
 
-    println!(
-        "LOGO: {:?}\nSHIFT: {:?}\nKEYSYM: {:?}",
-        modifiers.logo, modifiers.shift, keysym
-    );
-
     match (modifiers.logo, modifiers.shift, keysym) {
-        // FIXME + TODO: Create a ridgid system for bindings
+        // FIXME + TODO: Create a rigid system for bindings
         // This binding system is case-sensitive, which
         // it shouldnt be.
         (true, false, Keysym::q) => DestroyFocusedClient,
