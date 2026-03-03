@@ -16,22 +16,59 @@
       ...
     }:
     let
+      runtimeLibs = pkgs: with pkgs; [
+        expat
+        fontconfig
+        freetype
+        freetype.dev
+        vulkan-loader
+        alsa-plugins
+        udev
+        libGL
+        pkg-config
+        libx11
+        libxcursor
+        libxi
+        libxrandr
+        wayland
+        libxkbcommon
+      ];
       overlays = {
         default = final: prev: {
           yawc =
             (final.callPackage naersk {
               cargo = final.rust-bin.nightly.latest.default;
               rustc = final.rust-bin.nightly.latest.default;
-            }).buildPackage
-              {
-                pname = "yawc";
-                src = ./.;
-                buildInputs = with final; [
-                  pkg-config
-                  jack2
-                  alsa-lib
-                ];
-              };
+            }).buildPackage {
+              pname = "yawc";
+              src = ./.;
+
+              nativeBuildInputs = with final; [
+                makeWrapper
+              ];
+
+              buildInputs = with final; [
+                pkg-config
+                pipewire
+                seatd
+                libdisplay-info
+                alsa-lib
+                jack2
+                udev
+                pixman
+                libxkbcommon
+                libinput
+                libgbm
+              ];
+
+              postInstall = ''
+                mkdir -p $out/share/wayland-sessions
+                cp ${./yawc.desktop} $out/share/wayland-sessions/yawc.desktop
+
+                wrapProgram $out/bin/yawc \
+                  --prefix LD_LIBRARY_PATH : "${final.lib.makeLibraryPath (runtimeLibs final)}"
+              '';
+            };
         };
       };
     in
@@ -47,7 +84,7 @@
         };
       in
       {
-        devShells.default = pkgs.mkShell rec {
+        devShells.default = pkgs.mkShell {
           buildInputs =
             with pkgs;
             [
@@ -59,7 +96,6 @@
               # a build dep.
               alacritty
               pkg-config
-              cargo-bundle
               rust-analyzer
               rust-bin.nightly.latest.default
             ]
@@ -76,25 +112,6 @@
               libgbm
             ];
 
-          runtimeLibs =
-            with pkgs;
-            lib.optionals stdenv.isLinux [
-              expat
-              fontconfig
-              freetype
-              freetype.dev
-              vulkan-loader
-              alsa-plugins
-              udev
-              libGL
-              pkg-config
-              libx11
-              libxcursor
-              libxi
-              libxrandr
-              wayland
-              libxkbcommon
-            ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
         };

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=YaWC (UWSM)
+Comment=Batteries-included Wayland compositor (UWSM session)
+Exec=uwsm start -N "YaWC" -D yawc:yawc -C "YaWC" -- yawc
+Type=Application
+DesktopNames=yawc
