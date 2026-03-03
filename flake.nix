@@ -18,7 +18,7 @@
     let
       overlays = {
         default = final: prev: {
-          awc =
+          yawc =
             (final.callPackage naersk {
               cargo = final.rust-bin.nightly.latest.default;
               rustc = final.rust-bin.nightly.latest.default;
@@ -54,6 +54,10 @@
               typos
               clippy
               rustfmt
+              # INFO: Until configuration exists, alacritty
+              # is a hardcoded keybind, but doesn't mean it's
+              # a build dep.
+              alacritty
               pkg-config
               cargo-bundle
               rust-analyzer
@@ -95,7 +99,7 @@
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
         };
 
-        packages.default = pkgs.bytelab;
+        packages.default = pkgs.yawc;
         formatter =
           (treefmt-nix.lib.evalModule pkgs (_: {
             projectRootFile = "flake.nix";
