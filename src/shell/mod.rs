@@ -9,25 +9,25 @@ use smithay::wayland::drm_syncobj::DrmSyncobjCachedState;
 use smithay::{
     backend::renderer::utils::on_commit_buffer_handler,
     desktop::{
-        layer_map_for_output, space::SpaceElement, LayerSurface, PopupKind, PopupManager, Space,
-        WindowSurfaceType,
+        LayerSurface, PopupKind, PopupManager, Space, WindowSurfaceType, layer_map_for_output,
+        space::SpaceElement,
     },
     input::pointer::{CursorImageStatus, CursorImageSurfaceData},
     output::Output,
     reexports::{
         calloop::Interest,
         wayland_server::{
-            protocol::{wl_buffer::WlBuffer, wl_output, wl_surface::WlSurface},
             Client, Resource,
+            protocol::{wl_buffer::WlBuffer, wl_output, wl_surface::WlSurface},
         },
     },
     utils::{IsAlive, Logical, Point, Rectangle, Size},
     wayland::{
         buffer::BufferHandler,
         compositor::{
-            add_blocker, add_pre_commit_hook, get_parent, is_sync_subsurface, with_states,
-            with_surface_tree_upward, BufferAssignment, CompositorClientState, CompositorHandler,
-            CompositorState, SurfaceAttributes, TraversalAction,
+            BufferAssignment, CompositorClientState, CompositorHandler, CompositorState,
+            SurfaceAttributes, TraversalAction, add_blocker, add_pre_commit_hook, get_parent,
+            is_sync_subsurface, with_states, with_surface_tree_upward,
         },
         dmabuf::get_dmabuf,
         shell::{
@@ -41,8 +41,8 @@ use smithay::{
 };
 
 use crate::{
-    state::{YawcState, Backend},
     ClientState,
+    state::{Backend, YawcState},
 };
 
 mod element;
@@ -65,9 +65,12 @@ fn fullscreen_output_geometry(
     wl_output
         .and_then(Output::from_resource)
         .or_else(|| {
-            let w = space
-                .elements()
-                .find(|window| window.wl_surface().map(|s| &*s == wl_surface).unwrap_or(false));
+            let w = space.elements().find(|window| {
+                window
+                    .wl_surface()
+                    .map(|s| &*s == wl_surface)
+                    .unwrap_or(false)
+            });
             w.and_then(|w| space.outputs_for_element(w).first().cloned())
         })
         .as_ref()
@@ -145,7 +148,8 @@ impl<BackendData: Backend> CompositorHandler for YawcState<BackendData> {
                         let client = surface.client().unwrap();
                         let res = state.handle.insert_source(source, move |_, _, data| {
                             let dh = data.display_handle.clone();
-                            data.client_compositor_state(&client).blocker_cleared(data, &dh);
+                            data.client_compositor_state(&client)
+                                .blocker_cleared(data, &dh);
                             Ok(())
                         });
                         if res.is_ok() {
@@ -158,7 +162,8 @@ impl<BackendData: Backend> CompositorHandler for YawcState<BackendData> {
                     if let Some(client) = surface.client() {
                         let res = state.handle.insert_source(source, move |_, _, data| {
                             let dh = data.display_handle.clone();
-                            data.client_compositor_state(&client).blocker_cleared(data, &dh);
+                            data.client_compositor_state(&client)
+                                .blocker_cleared(data, &dh);
                             Ok(())
                         });
                         if res.is_ok() {
@@ -194,7 +199,8 @@ impl<BackendData: Backend> CompositorHandler for YawcState<BackendData> {
 
                     if let Some(buffer_offset) = buffer_offset {
                         let current_loc = self.space.element_location(&window).unwrap();
-                        self.space.map_element(window, current_loc + buffer_offset, false);
+                        self.space
+                            .map_element(window, current_loc + buffer_offset, false);
                     }
                 }
             }
@@ -259,7 +265,8 @@ impl<BackendData: Backend> WlrLayerShellHandler for YawcState<BackendData> {
             .and_then(Output::from_resource)
             .unwrap_or_else(|| self.space.outputs().next().unwrap().clone());
         let mut map = layer_map_for_output(&output);
-        map.map_layer(&LayerSurface::new(surface, namespace)).unwrap();
+        map.map_layer(&LayerSurface::new(surface, namespace))
+            .unwrap();
     }
 
     fn layer_destroyed(&mut self, surface: WlrLayerSurface) {
@@ -291,7 +298,11 @@ pub struct SurfaceData {
     pub resize_state: ResizeState,
 }
 
-fn ensure_initial_configure(surface: &WlSurface, space: &Space<WindowElement>, popups: &mut PopupManager) {
+fn ensure_initial_configure(
+    surface: &WlSurface,
+    space: &Space<WindowElement>,
+    popups: &mut PopupManager,
+) {
     with_surface_tree_upward(
         surface,
         (),
@@ -399,7 +410,7 @@ fn place_new_window(
 ) {
     // place the window at a random location on same output as pointer
     // or if there is not output in a [0;800]x[0;800] square
-    use rand::distributions::{Distribution, Uniform};
+    use rand::distr::{Distribution, Uniform};
 
     let output = space
         .output_under(pointer_location)
@@ -427,9 +438,9 @@ fn place_new_window(
     let max_y = output_geometry.loc.y + (((output_geometry.size.h as f32) / 3.0) * 2.0) as i32;
     let x_range = Uniform::new(output_geometry.loc.x, max_x);
     let y_range = Uniform::new(output_geometry.loc.y, max_y);
-    let mut rng = rand::thread_rng();
-    let x = x_range.sample(&mut rng);
-    let y = y_range.sample(&mut rng);
+    let mut rng = rand::rng();
+    let x = x_range.unwrap().sample(&mut rng);
+    let y = y_range.unwrap().sample(&mut rng);
 
     space.map_element(window.clone(), (x, y), activate);
 }
