@@ -81,12 +81,12 @@ impl<BackendData: Backend> YawcState<BackendData> {
 
             KeyAction::DestroyFocusedClient => {
                 info!("Quitting focused surface.");
-                if let Some(keyboard) = self.seat.get_keyboard() {
-                    if let Some(KeyboardFocusTarget::Window(window)) = keyboard.current_focus() {
-                        match window.underlying_surface() {
-                            smithay::desktop::WindowSurface::Wayland(w) => w.send_close(),
-                            smithay::desktop::WindowSurface::X11(w) => _ = w.close(),
-                        }
+                if let Some(keyboard) = self.seat.get_keyboard()
+                    && let Some(KeyboardFocusTarget::Window(window)) = keyboard.current_focus()
+                {
+                    match window.underlying_surface() {
+                        smithay::desktop::WindowSurface::Wayland(w) => w.send_close(),
+                        smithay::desktop::WindowSurface::X11(w) => _ = w.close(),
                     }
                 }
             }
@@ -164,9 +164,10 @@ impl<BackendData: Backend> YawcState<BackendData> {
             });
             if exclusive {
                 let surface = self.space.outputs().find_map(|o| {
-                    let map = layer_map_for_output(o);
-                    let cloned = map.layers().find(|l| l.layer_surface() == &layer).cloned();
-                    cloned
+                    layer_map_for_output(o)
+                        .layers()
+                        .find(|l| l.layer_surface() == &layer)
+                        .cloned()
                 });
                 if let Some(surface) = surface {
                     keyboard.set_focus(self, Some(surface.into()), serial);
@@ -288,17 +289,15 @@ impl<BackendData: Backend> YawcState<BackendData> {
                     .user_data()
                     .get::<FullscreenSurface>()
                     .and_then(|f| f.get())
-                {
-                    if let Some((_, _)) = window
+                    && let Some((_, _)) = window
                         .surface_under(location - output_geo.loc.to_f64(), WindowSurfaceType::ALL)
-                    {
-                        #[cfg(feature = "xwayland")]
-                        if let Some(surface) = window.0.x11_surface() {
-                            self.xwm.as_mut().unwrap().raise_window(surface).unwrap();
-                        }
-                        keyboard.set_focus(self, Some(window.into()), serial);
-                        return;
+                {
+                    #[cfg(feature = "xwayland")]
+                    if let Some(surface) = window.0.x11_surface() {
+                        self.xwm.as_mut().unwrap().raise_window(surface).unwrap();
                     }
+                    keyboard.set_focus(self, Some(window.into()), serial);
+                    return;
                 }
 
                 let layers = layer_map_for_output(output);
@@ -307,18 +306,16 @@ impl<BackendData: Backend> YawcState<BackendData> {
                     .or_else(|| {
                         layers.layer_under(WlrLayer::Top, location - output_geo.loc.to_f64())
                     })
+                    && layer.can_receive_keyboard_focus()
+                    && let Some((_, _)) = layer.surface_under(
+                        location
+                            - output_geo.loc.to_f64()
+                            - layers.layer_geometry(layer).unwrap().loc.to_f64(),
+                        WindowSurfaceType::ALL,
+                    )
                 {
-                    if layer.can_receive_keyboard_focus() {
-                        if let Some((_, _)) = layer.surface_under(
-                            location
-                                - output_geo.loc.to_f64()
-                                - layers.layer_geometry(layer).unwrap().loc.to_f64(),
-                            WindowSurfaceType::ALL,
-                        ) {
-                            keyboard.set_focus(self, Some(layer.clone().into()), serial);
-                            return;
-                        }
-                    }
+                    keyboard.set_focus(self, Some(layer.clone().into()), serial);
+                    return;
                 }
             }
 
@@ -344,17 +341,15 @@ impl<BackendData: Backend> YawcState<BackendData> {
                     .or_else(|| {
                         layers.layer_under(WlrLayer::Background, location - output_geo.loc.to_f64())
                     })
+                    && layer.can_receive_keyboard_focus()
+                    && let Some((_, _)) = layer.surface_under(
+                        location
+                            - output_geo.loc.to_f64()
+                            - layers.layer_geometry(layer).unwrap().loc.to_f64(),
+                        WindowSurfaceType::ALL,
+                    )
                 {
-                    if layer.can_receive_keyboard_focus() {
-                        if let Some((_, _)) = layer.surface_under(
-                            location
-                                - output_geo.loc.to_f64()
-                                - layers.layer_geometry(layer).unwrap().loc.to_f64(),
-                            WindowSurfaceType::ALL,
-                        ) {
-                            keyboard.set_focus(self, Some(layer.clone().into()), serial);
-                        }
-                    }
+                    keyboard.set_focus(self, Some(layer.clone().into()), serial);
                 }
             };
         }
@@ -823,29 +818,34 @@ impl YawcState<UdevData> {
             InputEvent::TouchFrame { event } => self.on_touch_frame::<B>(event),
             InputEvent::TouchCancel { event } => self.on_touch_cancel::<B>(event),
 
-            InputEvent::DeviceAdded { device } => {
-                if device.has_capability(DeviceCapability::TabletTool) {
+            InputEvent::DeviceAdded { device } => match device {
+                ref d if d.has_capability(DeviceCapability::TabletTool) => {
                     self.seat
                         .tablet_seat()
                         .add_tablet::<Self>(dh, &TabletDescriptor::from(&device));
                 }
-                if device.has_capability(DeviceCapability::Touch) && self.seat.get_touch().is_none()
+
+                d if d.has_capability(DeviceCapability::Touch)
+                    && self.seat.get_touch().is_none() =>
                 {
                     self.seat.add_touch();
                 }
-            }
-            InputEvent::DeviceRemoved { device } => {
-                if device.has_capability(DeviceCapability::TabletTool) {
+
+                _ => {}
+            },
+            InputEvent::DeviceRemoved { device } => match device {
+                ref d if d.has_capability(DeviceCapability::TabletTool) => {
                     let tablet_seat = self.seat.tablet_seat();
 
                     tablet_seat.remove_tablet(&TabletDescriptor::from(&device));
 
-                    // If there are no tablets in seat we can remove all tools
                     if tablet_seat.count_tablets() == 0 {
                         tablet_seat.clear_tools();
                     }
                 }
-            }
+
+                _ => {}
+            },
             _ => {
                 // other events are not handled in yawc (yet)
             }
@@ -917,20 +917,17 @@ impl YawcState<UdevData> {
         let new_under = self.surface_under(pointer_location);
 
         // If confined, don't move pointer if it would go outside surface or region
-        if pointer_confined {
-            if let Some((surface, surface_loc)) = &under {
-                if new_under.as_ref().and_then(|(under, _)| under.wl_surface())
-                    != surface.wl_surface()
-                {
-                    pointer.frame(self);
-                    return;
-                }
-                if let Some(region) = confine_region {
-                    if !region.contains((pointer_location - *surface_loc).to_i32_round()) {
-                        pointer.frame(self);
-                        return;
-                    }
-                }
+        if pointer_confined && let Some((surface, surface_loc)) = &under {
+            if new_under.as_ref().and_then(|(under, _)| under.wl_surface()) != surface.wl_surface()
+            {
+                pointer.frame(self);
+                return;
+            }
+            if let Some(region) = confine_region
+                && !region.contains((pointer_location - *surface_loc).to_i32_round())
+            {
+                pointer.frame(self);
+                return;
             }
         }
 
@@ -1377,19 +1374,16 @@ enum KeyAction {
 }
 
 fn canonicalize_keysym(sym: Keysym) -> Keysym {
-    if let Some(ch) = sym.key_char() {
-        if let Some(lower) = ch.to_lowercase().next() {
-            return Keysym::from_char(lower);
-        }
+    if let Some(ch) = sym.key_char()
+        && let Some(lower) = ch.to_lowercase().next()
+    {
+        return Keysym::from_char(lower);
     }
 
     sym
 }
 
-fn process_keyboard_shortcut(
-    modifiers: ModifiersState,
-    keysym: Keysym,
-) -> KeyAction {
+fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAction {
     use KeyAction::*;
 
     let sym = canonicalize_keysym(keysym);
@@ -1401,15 +1395,11 @@ fn process_keyboard_shortcut(
         (true, true, Keysym::m) => ScaleDown,
         (true, true, Keysym::p) => ScaleUp,
 
-        _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12)
-            .contains(&sym.raw()) =>
-        {
+        _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12).contains(&sym.raw()) => {
             VtSwitch((sym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
         }
 
-        _ if modifiers.logo
-            && (xkb::KEY_1..=xkb::KEY_9).contains(&sym.raw()) =>
-        {
+        _ if modifiers.logo && (xkb::KEY_1..=xkb::KEY_9).contains(&sym.raw()) => {
             Screen((sym.raw() - xkb::KEY_1) as usize)
         }
 
