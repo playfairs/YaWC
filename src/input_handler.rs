@@ -1376,30 +1376,39 @@ enum KeyAction {
     None,
 }
 
-fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAction {
+fn canonicalize_keysym(sym: Keysym) -> Keysym {
+    if let Some(ch) = sym.key_char() {
+        let lower = ch.to_lowercase().next().unwrap();
+        return Keysym::from_char(lower);
+    }
+
+    sym
+}
+
+fn process_keyboard_shortcut(
+    modifiers: ModifiersState,
+    keysym: Keysym,
+) -> KeyAction {
     use KeyAction::*;
 
-    match (modifiers.logo, modifiers.shift, keysym) {
-        // FIXME + TODO: Create a rigid system for bindings
-        // This binding system is case-sensitive, which
-        // it shouldnt be.
-        (true, false, Keysym::q) => DestroyFocusedClient,
-        (true, true, Keysym::Q) => Exit,
+    let sym = canonicalize_keysym(keysym);
+
+    match (modifiers.logo, modifiers.shift, sym) {
+        (true, _, Keysym::q) => DestroyFocusedClient,
+        (true, true, Keysym::m) => ScaleDown,
+        (true, true, Keysym::p) => ScaleUp,
 
         (true, _, Keysym::Return) => Exec("alacritty".into()),
 
-        (true, true, Keysym::M) => ScaleDown,
-        (true, true, Keysym::P) => ScaleUp,
-        (true, true, Keysym::W) => TogglePreview,
-        (true, true, Keysym::R) => RotateOutput,
-        (true, true, Keysym::T) => ToggleTint,
-        (true, true, Keysym::D) => ToggleDecorations,
-
-        _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12).contains(&keysym.raw()) => {
+        _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12)
+            .contains(&keysym.raw()) =>
+        {
             VtSwitch((keysym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
         }
 
-        _ if modifiers.logo && (xkb::KEY_1..=xkb::KEY_9).contains(&keysym.raw()) => {
+        _ if modifiers.logo
+            && (xkb::KEY_1..=xkb::KEY_9).contains(&keysym.raw()) =>
+        {
             Screen((keysym.raw() - xkb::KEY_1) as usize)
         }
 
