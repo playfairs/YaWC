@@ -39,7 +39,9 @@
           shellOverride = old: {
             nativeBuildInputs = old.nativeBuildInputs ++ [ ];
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath old.libraryBuildInputs;
-            buildInputs = old.buildInputs ++ [ ];
+            buildInputs = old.buildInputs ++ [
+              pkgs.alacritty
+            ];
           };
         in
         {
