@@ -1378,8 +1378,9 @@ enum KeyAction {
 
 fn canonicalize_keysym(sym: Keysym) -> Keysym {
     if let Some(ch) = sym.key_char() {
-        let lower = ch.to_lowercase().next().unwrap();
-        return Keysym::from_char(lower);
+        if let Some(lower) = ch.to_lowercase().next() {
+            return Keysym::from_char(lower);
+        }
     }
 
     sym
@@ -1394,22 +1395,22 @@ fn process_keyboard_shortcut(
     let sym = canonicalize_keysym(keysym);
 
     match (modifiers.logo, modifiers.shift, sym) {
-        (true, _, Keysym::q) => DestroyFocusedClient,
+        (true, false, Keysym::q) => DestroyFocusedClient,
+        (true, true, Keysym::q) => Exit,
+        (true, _, Keysym::Return) => Exec("alacritty".into()),
         (true, true, Keysym::m) => ScaleDown,
         (true, true, Keysym::p) => ScaleUp,
 
-        (true, _, Keysym::Return) => Exec("alacritty".into()),
-
         _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12)
-            .contains(&keysym.raw()) =>
+            .contains(&sym.raw()) =>
         {
-            VtSwitch((keysym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
+            VtSwitch((sym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
         }
 
         _ if modifiers.logo
-            && (xkb::KEY_1..=xkb::KEY_9).contains(&keysym.raw()) =>
+            && (xkb::KEY_1..=xkb::KEY_9).contains(&sym.raw()) =>
         {
-            Screen((keysym.raw() - xkb::KEY_1) as usize)
+            Screen((sym.raw() - xkb::KEY_1) as usize)
         }
 
         _ => None,
