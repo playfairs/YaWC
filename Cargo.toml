@@ -16,6 +16,8 @@ smithay-drm-extras = {git = "https://github.com/Smithay/smithay", optional = tru
 puffin_http = {version = "0.16.1", optional = true}
 profiling = {version = "1.0"}
 clap = {version = "4.5.60", features = ["derive"]}
+kdl = "6.5.0"
+knuffel = "3.2.0"
 
 [dependencies.smithay]
 default-features = false

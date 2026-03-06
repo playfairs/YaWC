@@ -62,18 +62,15 @@ in
       expat
       fontconfig
       freetype
-      # freetype.dev
       vulkan-loader
       alsa-plugins
       # udev
       libGL
-      # pkg-config
       libx11
       libxcursor
       libxi
       libxrandr
       wayland
-      # libxkbcommon
     ];
 
     postInstall = ''

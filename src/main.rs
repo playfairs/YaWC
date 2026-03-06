@@ -4,12 +4,19 @@ static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
     profiling::tracy_client::ProfiledAllocator::new(std::alloc::System, 10);
 
 use clap::Parser;
+use yawc::config::Config;
 
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {}
 
 fn main() {
+    // DEBUG: DELETE THIS LATER, DEBUGGING CODE
+    let _cinst = Config::init_config_instance();
+    // DEBUG: DELETE THIS LATER, DEBUGGING CODE
+    let cinst = Config::read_arc_instance();
+    // DEBUG: DELETE THIS LATER, DEBUGGING CODE
+    println!("{cinst:#?}");
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
         tracing_subscriber::fmt()
             .compact()
