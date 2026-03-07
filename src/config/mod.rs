@@ -133,7 +133,7 @@ fn create_missing_config() -> Result<(), io::Error> {
     }
 
     let mut file = fs::File::create(&path)?;
-    file.write_all(include_str!("./init.kdl").as_bytes())?;
+    file.write_all(include_str!("../../resources/init.kdl").as_bytes())?;
     Ok(())
 }
 
