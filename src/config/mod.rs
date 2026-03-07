@@ -15,13 +15,30 @@ use std::{
 static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 
 #[derive(knuffel::Decode, Debug, Default)]
-pub struct Config {
+pub struct RawConfig {
     #[knuffel(child, unwrap(argument))]
-    pub version: Option<String>,
+    pub version: Option<f64>,
     #[knuffel(child)]
     pub envs: Option<Envs>,
     #[knuffel(child)]
     pub binds: Option<Binds>,
+}
+
+#[derive(Debug, Default)]
+pub struct Config {
+    pub version: f64,
+    pub envs: Envs,
+    pub binds: Binds,
+}
+
+impl From<RawConfig> for Config {
+    fn from(raw: RawConfig) -> Self {
+        Self {
+            version: raw.version.unwrap_or(-1.0),
+            envs: raw.envs.unwrap_or_default(),
+            binds: raw.binds.unwrap_or_default(),
+        }
+    }
 }
 
 fn get_config_instance() -> PathBuf {
@@ -38,24 +55,32 @@ fn parse_config(path: &str) -> miette::Result<Config> {
         .into_diagnostic()
         .wrap_err_with(|| format!("cannot read {:?}", path))?;
 
-    knuffel::parse(path, &text)
+    let raw_config: RawConfig = knuffel::parse(path, &text)
         .into_diagnostic()
-        .wrap_err("failed to parse config")
+        .wrap_err("failed to parse config")?;
+
+    Ok(Config::from(raw_config))
 }
 
 impl Config {
     pub fn init_config_instance() {
         let mut mut_cinst = CONFIG_INSTANCE.write().unwrap();
 
-        *mut_cinst = Some(Arc::new(
-            parse_config(
-                &get_config_instance()
-                    .into_os_string()
-                    .into_string()
-                    .unwrap(),
-            )
-            .expect("config parse failed"),
-        ));
+        let config = parse_config(
+            &get_config_instance()
+                .into_os_string()
+                .into_string()
+                .unwrap(),
+        )
+        .expect("config parse failed");
+
+        match config.version {
+            -1.0 => tracing::warn!("Configuration version is unset! Defaulting to v1 specification"),
+            1.0 => {}, // Config verison value is Ok.
+            _ => tracing::warn!("Configuration version is set to an unknown value! Defaulting to v1 specification"),
+        }
+
+        *mut_cinst = Some(Arc::new(config));
     }
 
     /// Read `RwLock<Option<Arc<KdlDocument>>>` returning
