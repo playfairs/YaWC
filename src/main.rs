@@ -37,9 +37,7 @@ fn main() {
     let _cinst = Config::init_config_instance();
 
     // DEBUG: Print config, DELETE ME LATER!!!!
-    let config = Config::read_config();
-    // DEBUG: Print config, DELETE ME LATER!!!!
-    println!("{config:#?}");
+    println!("{:#?}", Config::read_config());
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         tracing::info!("Starting yawc with winit backend");
