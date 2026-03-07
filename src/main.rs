@@ -36,6 +36,10 @@ fn main() {
     tracing::info!("Initialising configuration instance");
     let _cinst = Config::init_config_instance();
 
+    let config = Config::read_config();
+
+    println!("{config:#?}");
+
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         tracing::info!("Starting yawc with winit backend");
         yawc::winit::run_winit();

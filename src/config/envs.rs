@@ -1,11 +1,14 @@
-#[derive(Debug, Default, PartialEq)]
-pub struct Envs(pub Vec<Env>);
+#[derive(knuffel::Decode, Debug, Default, PartialEq)]
+pub struct Envs {
+    #[knuffel(children)]
+    pub vars: Vec<EnvVar>,
+}
 
-/// Type for a ENV
-/// e.g: name:  "GTK_THEME"
-///      value: "rose-pine"
-#[derive(Debug, Clone, PartialEq)]
-pub struct Env {
+#[derive(knuffel::Decode, Debug, PartialEq)]
+pub struct EnvVar {
+    #[knuffel(node_name)]
     pub name: String,
+
+    #[knuffel(argument)]
     pub value: String,
 }

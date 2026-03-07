@@ -1,69 +1,71 @@
 pub mod binds;
 pub mod envs;
 
-use binds::*;
+// use binds::*;
 use core::{convert::From, include_str, option::Option::None};
 use envs::*;
-use kdl::KdlDocument;
+use miette::{Context, IntoDiagnostic};
 use std::{
-    env,
-    fs::{self, read_to_string},
+    env, fs,
     io::{self, Write},
     path::PathBuf,
     sync::{Arc, RwLock},
 };
 
-static CONFIG_INSTANCE: RwLock<Option<Arc<KdlDocument>>> = RwLock::new(None);
+static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(knuffel::Decode, Debug, Default)]
 pub struct Config {
+    #[knuffel(child)]
     pub env: Envs,
-    pub binds: Binds,
+    // #[knuffel(child)]
+    // pub binds: Binds,
+}
+
+fn get_config_instance() -> PathBuf {
+    if let Some(cpath) = get_config_path() {
+        return cpath;
+    } else {
+        create_missing_config().unwrap();
+        get_config_instance()
+    }
+}
+
+fn parse_config(path: &str) -> miette::Result<Config> {
+    let text = fs::read_to_string(path)
+        .into_diagnostic()
+        .wrap_err_with(|| format!("cannot read {:?}", path))?;
+
+    knuffel::parse(path, &text)
+        .into_diagnostic()
+        .wrap_err("failed to parse config")
 }
 
 impl Config {
     pub fn init_config_instance() {
         let mut mut_cinst = CONFIG_INSTANCE.write().unwrap();
-        *mut_cinst = Some(Arc::new(get_config_string().parse().unwrap()))
+
+        *mut_cinst = Some(Arc::new(
+            parse_config(
+                &get_config_instance()
+                    .into_os_string()
+                    .into_string()
+                    .unwrap(),
+            )
+            .expect("config parse failed"),
+        ));
     }
 
     /// Read `RwLock<Option<Arc<KdlDocument>>>` returning
     /// `Config`, make sure to run `init_config_instance()`
     /// before attempting to run this function.
-    pub fn read_config() -> Self {
-        let oinst = CONFIG_INSTANCE.read().unwrap();
-        let _cinst = Arc::clone(
-            &oinst
-                .as_ref()
-                .expect("init_config_instance() must be called first")
-                .clone(),
-        );
-
-        Self {
-            env: Envs(vec![Env {
-                name: "TESTING".into(),
-                value: "1".into(),
-            }]),
-            binds: Binds(vec![Bind {
-                key: binds::Key {
-                    trigger: binds::Trigger::Keysym(smithay::input::keyboard::Keysym::q),
-                    modifiers: Modifiers::SUPER | Modifiers::SHIFT,
-                },
-                repeat: false,
-                cooldown: None,
-                allow_when_locked: false,
-                action: binds::Action::Quit,
-            }]),
-        }
-    }
-}
-
-fn get_config_string() -> String {
-    if let Some(cpath) = get_config_path() {
-        read_to_string(cpath).unwrap()
-    } else {
-        create_missing_config().unwrap();
-        get_config_string()
+    pub fn read_config() -> Arc<Config> {
+        CONFIG_INSTANCE
+            .read()
+            .unwrap()
+            .as_ref()
+            .expect("init_config_instance() must be called first")
+            .clone()
     }
 }
 
@@ -131,12 +133,8 @@ fn create_missing_config() -> Result<(), io::Error> {
     }
 
     let mut file = fs::File::create(&path)?;
-    file.write_all(get_init_config_string().as_bytes())?;
+    file.write_all(include_str!("./init.kdl").as_bytes())?;
     Ok(())
-}
-
-fn get_init_config_string() -> String {
-    include_str!("./init.kdl").to_string()
 }
 
 fn check_exists(p: impl Into<PathBuf>) -> Option<PathBuf> {
