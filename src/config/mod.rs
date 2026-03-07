@@ -1,7 +1,7 @@
 pub mod binds;
 pub mod envs;
 
-// use binds::*;
+use binds::*;
 use core::{convert::From, include_str, option::Option::None};
 use envs::*;
 use miette::{Context, IntoDiagnostic};
@@ -16,10 +16,12 @@ static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 
 #[derive(knuffel::Decode, Debug, Default)]
 pub struct Config {
+    #[knuffel(child, unwrap(argument))]
+    pub version: Option<String>,
     #[knuffel(child)]
-    pub env: Envs,
-    // #[knuffel(child)]
-    // pub binds: Binds,
+    pub envs: Option<Envs>,
+    #[knuffel(child)]
+    pub binds: Option<Binds>,
 }
 
 fn get_config_instance() -> PathBuf {

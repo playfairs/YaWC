@@ -1,14 +1,13 @@
-#[derive(knuffel::Decode, Debug, Default, PartialEq)]
+#[derive(knuffel::Decode, Debug, Default)]
 pub struct Envs {
     #[knuffel(children)]
-    pub vars: Vec<EnvVar>,
+    pub vars: Vec<Env>,
 }
 
-#[derive(knuffel::Decode, Debug, PartialEq)]
-pub struct EnvVar {
+#[derive(knuffel::Decode, Debug, PartialEq, Default)]
+pub struct Env {
     #[knuffel(node_name)]
     pub name: String,
-
     #[knuffel(argument)]
     pub value: String,
 }

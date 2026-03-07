@@ -1,11 +1,11 @@
 #[derive(knuffel::Decode, Debug, Default)]
 pub struct Binds {
-    #[knuffel(children(name = "bind"))]
-    pub register: Vec<Bind>,
+    #[knuffel(children)]
+    pub binds: Vec<Bind>,
 }
 
-#[derive(knuffel::Decode, Debug, Default)]
+#[derive(knuffel::Decode, Debug, PartialEq, Default)]
 pub struct Bind {
-    #[knuffel(property)]
-    pub feild: String,
+    #[knuffel(argument)]
+    pub something: String,
 }
