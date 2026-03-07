@@ -74,7 +74,7 @@ fn get_config_string() -> String {
 /// go ahead and return `None`.
 fn get_config_path() -> Option<PathBuf> {
     // This will literally just expect $YAWC_CONFIG_PATH to be
-    // full aboslute path, an example of the ENV variable would
+    // full absolute path, an example of the ENV variable would
     // be YAWC_CONFIG_PATH=/home/invra/.yawc/config.kdl, which
     // if it exists, that will be the PathBuf.
     if let Ok(cfg) = env::var("YAWC_CONFIG_PATH")

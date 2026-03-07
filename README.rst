@@ -58,10 +58,10 @@ features enabled.
 * x11 (for xwayland)
 * libxkbcommon
 
-Envrionment Variables
+Environment Variables
 ----------------------
 
-There are certain ENV varibles which can be used by and for YaWC.
+There are certain ENV variables which can be used by and for YaWC.
 
 What we look for
 ^^^^^^^^^^^^^^^^^
