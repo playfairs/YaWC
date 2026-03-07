@@ -14,7 +14,7 @@ fn main() {
     // DEBUG: DELETE THIS LATER, DEBUGGING CODE
     let _cinst = Config::init_config_instance();
     // DEBUG: DELETE THIS LATER, DEBUGGING CODE
-    let cinst = Config::read_arc_instance();
+    let cinst = Config::read_config();
     // DEBUG: DELETE THIS LATER, DEBUGGING CODE
     println!("{cinst:#?}");
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {

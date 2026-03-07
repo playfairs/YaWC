@@ -27,12 +27,34 @@ impl Config {
         *mut_cinst = Some(Arc::new(get_config_string().parse().unwrap()))
     }
 
-    pub fn read_arc_instance() -> Arc<KdlDocument> {
-        let guard = CONFIG_INSTANCE.read().unwrap();
-        guard
-            .as_ref()
-            .expect("init_config_instance() must be called first")
-            .clone()
+    /// Read `RwLock<Option<Arc<KdlDocument>>>` returning
+    /// `Config`, make sure to run `init_config_instance()`
+    /// before attempting to run this function.
+    pub fn read_config() -> Self {
+        let oinst = CONFIG_INSTANCE.read().unwrap();
+        let _cinst = Arc::clone(
+            &oinst
+                .as_ref()
+                .expect("init_config_instance() must be called first")
+                .clone(),
+        );
+
+        Self {
+            env: Envs(vec![Env {
+                name: "TESTING".into(),
+                value: "1".into(),
+            }]),
+            binds: Binds(vec![Bind {
+                key: binds::Key {
+                    trigger: binds::Trigger::Keysym(smithay::input::keyboard::Keysym::q),
+                    modifiers: Modifiers::SUPER | Modifiers::SHIFT,
+                },
+                repeat: false,
+                cooldown: None,
+                allow_when_locked: false,
+                action: binds::Action::Quit,
+            }]),
+        }
     }
 }
 
@@ -40,9 +62,7 @@ fn get_config_string() -> String {
     if let Some(cpath) = get_config_path() {
         read_to_string(cpath).unwrap()
     } else {
-        if let Err(_err) = create_missing_config() {
-            panic!();
-        };
+        create_missing_config().unwrap();
         get_config_string()
     }
 }
@@ -99,14 +119,10 @@ fn create_missing_config() -> Result<(), io::Error> {
                 "No config path found",
             ));
         }
-    } else if let Ok(xdg_conf_home) = env::var("XDG_CONFIG_HOME") {
-        PathBuf::from(format!("{}/yawc/config.kdl", xdg_conf_home))
-    } else if let Ok(home_dir) = env::var("HOME") {
-        PathBuf::from(format!("{}/.config/yawc/config.kdl", home_dir))
     } else {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            "No config path found",
+            "The USER env var was not found.",
         ));
     };
 
@@ -115,8 +131,7 @@ fn create_missing_config() -> Result<(), io::Error> {
     }
 
     let mut file = fs::File::create(&path)?;
-    let config_string = get_init_config_string();
-    file.write_all(config_string.as_bytes())?;
+    file.write_all(get_init_config_string().as_bytes())?;
     Ok(())
 }
 

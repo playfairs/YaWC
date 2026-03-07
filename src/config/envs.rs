@@ -6,6 +6,6 @@ pub struct Envs(pub Vec<Env>);
 ///      value: "rose-pine"
 #[derive(Debug, Clone, PartialEq)]
 pub struct Env {
-    name: String,
-    value: String,
+    pub name: String,
+    pub value: String,
 }
