@@ -36,8 +36,9 @@ fn main() {
     tracing::info!("Initialising configuration instance");
     let _cinst = Config::init_config_instance();
 
+    // DEBUG: Print config, DELETE ME LATER!!!!
     let config = Config::read_config();
-
+    // DEBUG: Print config, DELETE ME LATER!!!!
     println!("{config:#?}");
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
