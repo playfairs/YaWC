@@ -11,12 +11,6 @@ use yawc::config::Config;
 struct Args {}
 
 fn main() {
-    // DEBUG: DELETE THIS LATER, DEBUGGING CODE
-    let _cinst = Config::init_config_instance();
-    // DEBUG: DELETE THIS LATER, DEBUGGING CODE
-    let cinst = Config::read_config();
-    // DEBUG: DELETE THIS LATER, DEBUGGING CODE
-    println!("{cinst:#?}");
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
         tracing_subscriber::fmt()
             .compact()
@@ -38,6 +32,9 @@ fn main() {
         puffin_http::Server::new(&format!("0.0.0.0:{}", puffin_http::DEFAULT_PORT)).unwrap();
     #[cfg(feature = "profile-with-puffin")]
     profiling::puffin::set_scopes_on(true);
+
+    tracing::info!("Initialising configuration instance");
+    let _cinst = Config::init_config_instance();
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         tracing::info!("Starting yawc with winit backend");
