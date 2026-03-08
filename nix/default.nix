@@ -75,7 +75,7 @@ in
 
     postInstall = ''
       mkdir -p $out/share/wayland-sessions
-      cp ${../yawc.desktop} $out/share/wayland-sessions/yawc.desktop
+      cp ${../yawc/yawc.desktop} $out/share/wayland-sessions/yawc.desktop
 
       wrapProgram $out/bin/yawc \
         --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraryBuildInputs}"
