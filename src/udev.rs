@@ -10,6 +10,7 @@ use std::{
 };
 
 use crate::{
+    config::Config,
     drawing::*,
     render::*,
     shell::WindowElement,
@@ -243,6 +244,13 @@ pub fn run_udev() {
 
         // Set GTK Backend to Wayland
         std::env::set_var("GTK_BACKEND", "wayland");
+
+        // For all other env's set by someone in their config,
+        // this will set them.
+        // This includes being able to override the ones above.
+        for e in &Config::read_config().envs.vars {
+            std::env::set_var(e.name.clone(), e.value.clone());
+        }
     }
 
     /*
