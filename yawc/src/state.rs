@@ -1,12 +1,12 @@
 #[cfg(feature = "xwayland")]
 use std::os::unix::io::OwnedFd;
+
+use tracing::{info, warn};
 use std::{
     collections::HashMap,
     sync::{Arc, atomic::AtomicBool},
     time::Duration,
 };
-
-use tracing::{info, warn};
 
 use smithay::{
     backend::{
@@ -120,19 +120,21 @@ use smithay::{
 };
 
 #[cfg(feature = "xwayland")]
-use crate::cursor::Cursor;
+use {
+    crate::cursor::Cursor,
+    smithay::{
+        delegate_xwayland_keyboard_grab, delegate_xwayland_shell,
+        utils::Size,
+        wayland::selection::{SelectionSource, SelectionTarget},
+        wayland::xwayland_keyboard_grab::{XWaylandKeyboardGrabHandler, XWaylandKeyboardGrabState},
+        wayland::xwayland_shell,
+        xwayland::{X11Wm, XWayland, XWaylandEvent},
+    },
+};
+
 use crate::{
     focus::{KeyboardFocusTarget, PointerFocusTarget},
     shell::WindowElement,
-};
-#[cfg(feature = "xwayland")]
-use smithay::{
-    delegate_xwayland_keyboard_grab, delegate_xwayland_shell,
-    utils::Size,
-    wayland::selection::{SelectionSource, SelectionTarget},
-    wayland::xwayland_keyboard_grab::{XWaylandKeyboardGrabHandler, XWaylandKeyboardGrabState},
-    wayland::xwayland_shell,
-    xwayland::{X11Wm, XWayland, XWaylandEvent},
 };
 
 #[derive(Debug, Default)]
@@ -211,7 +213,6 @@ pub struct DndIcon {
     pub surface: WlSurface,
     pub offset: Point<i32, Logical>,
 }
-
 delegate_compositor!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> DataDeviceHandler for YawcState<BackendData> {
@@ -320,7 +321,6 @@ impl<BackendData: Backend> DataControlHandler for YawcState<BackendData> {
         &mut self.data_control_state
     }
 }
-
 delegate_data_control!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> ShmHandler for YawcState<BackendData> {
@@ -365,7 +365,6 @@ impl<BackendData: Backend> TabletSeatHandler for YawcState<BackendData> {
     }
 }
 delegate_tablet_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 delegate_text_input_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> InputMethodHandler for YawcState<BackendData> {
@@ -392,7 +391,6 @@ impl<BackendData: Backend> InputMethodHandler for YawcState<BackendData> {
             .unwrap_or_default()
     }
 }
-
 delegate_input_method_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> KeyboardShortcutsInhibitHandler for YawcState<BackendData> {
@@ -407,11 +405,8 @@ impl<BackendData: Backend> KeyboardShortcutsInhibitHandler for YawcState<Backend
 }
 
 delegate_keyboard_shortcuts_inhibit!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 delegate_virtual_keyboard_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 delegate_pointer_gestures!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 delegate_relative_pointer!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> PointerConstraintsHandler for YawcState<BackendData> {
@@ -451,7 +446,6 @@ impl<BackendData: Backend> PointerConstraintsHandler for YawcState<BackendData> 
     }
 }
 delegate_pointer_constraints!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 delegate_viewporter!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> XdgActivationHandler for YawcState<BackendData> {
@@ -628,11 +622,8 @@ impl<BackendData: Backend> XdgForeignHandler for YawcState<BackendData> {
     }
 }
 smithay::delegate_xdg_foreign!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 smithay::delegate_single_pixel_buffer!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 smithay::delegate_fifo!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 smithay::delegate_commit_timing!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 delegate_fixes!(@<BackendData: Backend + 'static> YawcState<BackendData>);

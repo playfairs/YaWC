@@ -1,3 +1,25 @@
+#![cfg_attr(
+    not(any(feature = "winit", feature = "x11", feature = "udev")),
+    allow(dead_code, unused_imports)
+)]
+
+#[cfg(any(feature = "udev", feature = "xwayland"))]
+pub mod cursor;
+pub mod drawing;
+pub mod focus;
+pub mod input_handler;
+pub mod render;
+pub mod shell;
+pub mod state;
+#[cfg(feature = "udev")]
+pub mod udev;
+#[cfg(feature = "winit")]
+pub mod winit;
+#[cfg(feature = "x11")]
+pub mod x11;
+
+pub use state::{ClientState, YawcState};
+
 #[cfg(feature = "profile-with-tracy-mem")]
 #[global_allocator]
 static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
@@ -44,12 +66,12 @@ fn main() {
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         tracing::info!("Starting yawc with winit backend");
-        yawc::winit::run_winit();
+        winit::run_winit();
     } else if std::env::var("DISPLAY").is_ok() {
         tracing::info!("Starting yawc with x11 backend");
-        yawc::x11::run_x11();
+        x11::run_x11();
     } else {
         tracing::info!("Starting yawc on a tty using udev");
-        yawc::udev::run_udev();
+        udev::run_udev();
     }
 }

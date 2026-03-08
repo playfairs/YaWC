@@ -2,16 +2,16 @@
 gl_generator.workspace = true
 
 [dependencies]
-bitflags.workspace = true
-tracing.workspace = true
 tracing-subscriber.workspace = true
+yawc-config.workspace = true
 thiserror.workspace = true
 xkbcommon.workspace = true
 profiling.workspace = true
 pico-args.workspace = true
 getrandom.workspace = true
+bitflags.workspace = true
+tracing.workspace = true
 smithay.workspace = true
-yawc-config.workspace = true
 
 [dependencies.fps_ticker]
 workspace = true
