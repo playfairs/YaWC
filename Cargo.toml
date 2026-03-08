@@ -1,67 +1,51 @@
-[build-dependencies]
+[workspace]
+resolver = "3" # Rust 2024
+members = ["yawc_config", "yawc"]
+default-members = ["yawc"]
+
+[workspace.dependencies]
 gl_generator = "0.14.0"
-
-[dependencies]
-bitflags = "2.11.0"
-fps_ticker = {version = "1.0.0", optional = true}
-image = {version = "0.25.9", default-features = false, optional = true, features = ["png"]}
-tracing = {version = "0.1.44", features = ["max_level_trace", "release_max_level_debug"]}
-tracing-subscriber = {version = "0.3.22", features = ["env-filter"]}
+puffin_http = "0.16.1"
+renderdoc = "0.12.1"
+fps_ticker = "1.0.0"
 thiserror = "2.0.18"
-xcursor = {version = "0.3.10", optional = true}
 xkbcommon = "0.9.0"
-renderdoc = {version = "0.12.1", optional = true}
-smithay-drm-extras = {git = "https://github.com/Smithay/smithay", optional = true}
-puffin_http = {version = "0.16.1", optional = true}
-profiling = {version = "1.0"}
 pico-args = "0.5.0"
-knuffel = "3.2.0"
-miette = { version = "7.6.0", features=["fancy"] }
 getrandom = "0.4.2"
+bitflags = "2.11.0"
+xcursor = "0.3.10"
+profiling = "1.0"
+knuffel = "3.2.0"
 
-[dependencies.smithay]
+[workspace.dependencies.yawc-config]
+path = "./yawc_config"
+
+[workspace.dependencies.image]
+version = "0.25.9"
+default-features = false
+features = ["png"]
+
+[workspace.dependencies.tracing]
+version = "0.1.44"
+features = ["max_level_trace", "release_max_level_debug"]
+
+[workspace.dependencies.tracing-subscriber]
+version = "0.3.22"
+features = ["env-filter"]
+
+[workspace.dependencies.smithay-drm-extras]
+git = "https://github.com/Smithay/smithay"
+
+[workspace.dependencies.miette]
+version = "7.6.0"
+features=["fancy"]
+
+[workspace.dependencies.smithay]
 default-features = false
 git = "https://github.com/Smithay/smithay.git"
 features = ["desktop", "wayland_frontend"]
 
-[dependencies.x11rb]
+[workspace.dependencies.x11rb]
 default-features = false
 features = ["composite"]
-optional = true
 version = "0.13.2"
-
-[features]
-debug = ["fps_ticker", "image/png", "renderdoc"]
-default = ["egl", "winit", "x11", "udev", "xwayland"]
-egl = ["smithay/use_system_lib", "smithay/backend_egl"]
-test_all_features = ["default", "debug"]
-udev = [
-  "smithay-drm-extras",
-  "smithay/backend_libinput",
-  "smithay/backend_udev",
-  "smithay/backend_drm",
-  "smithay/backend_gbm",
-  "smithay/backend_vulkan",
-  "smithay/backend_egl",
-  "smithay/backend_session_libseat",
-  "image",
-  "smithay/renderer_gl",
-  "smithay/renderer_pixman",
-  "smithay/renderer_multi",
-  "xcursor"
-]
-winit = ["smithay/backend_winit", "smithay/backend_drm"]
-x11 = ["smithay/backend_x11", "x11rb", "smithay/renderer_gl", "smithay/backend_vulkan"]
-xwayland = ["smithay/xwayland", "x11rb", "smithay/x11rb_event_source", "xcursor"]
-profile-with-puffin = ["profiling/profile-with-puffin", "puffin_http"]
-profile-with-tracy = ["profiling/profile-with-tracy"]
-profile-with-tracy-mem = ["profile-with-tracy"]
-renderer_sync = []
-
-[package]
-authors = ["Invra <identificationsucks@gmail.com>"]
-edition = "2024"
-license = "AGPL-3.0"
-name = "yawc"
-publish = false
-version = "0.0.1"

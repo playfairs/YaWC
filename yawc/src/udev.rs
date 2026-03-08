@@ -8,9 +8,9 @@ use std::{
     sync::{Mutex, Once, atomic::Ordering},
     time::{Duration, Instant},
 };
+use yawc_config::Config;
 
 use crate::{
-    config::Config,
     drawing::*,
     render::*,
     shell::WindowElement,

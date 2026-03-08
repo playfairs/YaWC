@@ -1,0 +1,12 @@
+[dependencies]
+tracing.workspace = true
+knuffel.workspace = true
+miette.workspace = true
+
+[package]
+name = "yawc-config"
+version = "0.0.1"
+description = "Configuration handler for YaWC"
+license = "AGPL-3.0"
+readme = "README.org"
+edition = "2024"

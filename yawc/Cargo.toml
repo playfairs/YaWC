@@ -1,0 +1,79 @@
+[build-dependencies]
+gl_generator.workspace = true
+
+[dependencies]
+bitflags.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+thiserror.workspace = true
+xkbcommon.workspace = true
+profiling.workspace = true
+pico-args.workspace = true
+getrandom.workspace = true
+smithay.workspace = true
+yawc-config.workspace = true
+
+[dependencies.fps_ticker]
+workspace = true
+optional = true
+
+[dependencies.image]
+workspace = true
+optional = true
+
+[dependencies.xcursor]
+workspace = true
+optional = true
+
+[dependencies.smithay-drm-extras]
+workspace = true
+optional = true
+
+[dependencies.renderdoc]
+workspace = true
+optional = true
+
+[dependencies.puffin_http]
+workspace = true
+optional = true
+
+[dependencies.x11rb]
+workspace = true
+optional = true
+
+
+[package]
+name = "yawc"
+version = "0.0.1"
+description = "Batteries-included Wayland compositor"
+license = "AGPL-3.0"
+readme = "../README.org"
+edition = "2024"
+
+[features]
+debug = ["fps_ticker", "image/png", "renderdoc"]
+default = ["egl", "winit", "x11", "udev", "xwayland"]
+egl = ["smithay/use_system_lib", "smithay/backend_egl"]
+test_all_features = ["default", "debug"]
+udev = [
+  "smithay-drm-extras",
+  "smithay/backend_libinput",
+  "smithay/backend_udev",
+  "smithay/backend_drm",
+  "smithay/backend_gbm",
+  "smithay/backend_vulkan",
+  "smithay/backend_egl",
+  "smithay/backend_session_libseat",
+  "image",
+  "smithay/renderer_gl",
+  "smithay/renderer_pixman",
+  "smithay/renderer_multi",
+  "xcursor"
+]
+winit = ["smithay/backend_winit", "smithay/backend_drm"]
+x11 = ["smithay/backend_x11", "x11rb", "smithay/renderer_gl", "smithay/backend_vulkan"]
+xwayland = ["smithay/xwayland", "x11rb", "smithay/x11rb_event_source", "xcursor"]
+profile-with-puffin = ["profiling/profile-with-puffin", "puffin_http"]
+profile-with-tracy = ["profiling/profile-with-tracy"]
+profile-with-tracy-mem = ["profile-with-tracy"]
+renderer_sync = []
