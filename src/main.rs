@@ -24,7 +24,7 @@ fn main() {
 
     let remaining = pargs.finish();
     if !remaining.clone().is_empty() {
-        eprintln!("Unknown arguments: {:?}", remaining);
+        eprintln!("Unknown arguments: {remaining:?}");
         std::process::exit(2);
     }
 
