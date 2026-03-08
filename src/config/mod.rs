@@ -50,7 +50,8 @@ fn get_config_instance() -> PathBuf {
     }
 }
 
-fn parse_config(path: &str) -> miette::Result<Config> {
+fn parse_config(path_ref: impl AsRef<str>) -> miette::Result<Config> {
+    let path: &str = path_ref.as_ref();
     let text = fs::read_to_string(path)
         .into_diagnostic()
         .wrap_err_with(|| format!("cannot read {:?}", path))?;
@@ -65,7 +66,7 @@ fn parse_config(path: &str) -> miette::Result<Config> {
 impl Config {
     pub fn init_config_instance() {
         let config = parse_config(
-            &get_config_instance()
+            get_config_instance()
                 .into_os_string()
                 .into_string()
                 .unwrap(),
