@@ -3,12 +3,7 @@
 static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
     profiling::tracy_client::ProfiledAllocator::new(std::alloc::System, 10);
 
-use clap::Parser;
 use yawc::config::Config;
-
-#[derive(Parser, Debug)]
-#[command(version)]
-struct Args {}
 
 fn main() {
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
@@ -20,7 +15,18 @@ fn main() {
         tracing_subscriber::fmt().compact().init();
     }
 
-    let _args = Args::parse();
+    let mut pargs = pico_args::Arguments::from_env();
+
+    if pargs.contains(["-V", "--version"]) {
+        println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
+    let remaining = pargs.finish();
+    if !remaining.clone().is_empty() {
+        eprintln!("Unknown arguments: {:?}", remaining);
+        std::process::exit(2);
+    }
 
     #[cfg(feature = "profile-with-tracy")]
     profiling::tracy_client::Client::start();
