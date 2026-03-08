@@ -64,7 +64,7 @@ fn parse_config(path_ref: impl AsRef<str>) -> miette::Result<Config> {
 }
 
 impl Config {
-    pub fn init_config_instance() {
+    pub fn init_config_instance() -> miette::Result<()> {
         let config = parse_config(
             get_config_instance()
                 .into_os_string()
@@ -84,6 +84,8 @@ impl Config {
         }
 
         *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
+
+        Ok(())
     }
 
     /// Read `RwLock<Option<Arc<KdlDocument>>>` returning

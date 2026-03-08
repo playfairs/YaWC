@@ -5,7 +5,7 @@ static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
 
 use yawc::config::Config;
 
-fn main() {
+fn main() -> miette::Result<(), ()> {
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
         tracing_subscriber::fmt()
             .compact()
@@ -19,7 +19,7 @@ fn main() {
 
     if pargs.contains(["-V", "--version"]) {
         println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-        return;
+        return Ok(());
     }
 
     let remaining = pargs.finish();
@@ -40,7 +40,7 @@ fn main() {
     profiling::puffin::set_scopes_on(true);
 
     tracing::info!("Initialising configuration instance");
-    Config::init_config_instance();
+    Config::init_config_instance().unwrap();
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         tracing::info!("Starting yawc with winit backend");
@@ -52,4 +52,6 @@ fn main() {
         tracing::info!("Starting yawc on a tty using udev");
         yawc::udev::run_udev();
     }
+
+    Ok(())
 }
