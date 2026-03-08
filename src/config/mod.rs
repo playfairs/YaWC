@@ -43,7 +43,7 @@ impl From<RawConfig> for Config {
 
 fn get_config_instance() -> PathBuf {
     if let Some(cpath) = get_config_path() {
-        return cpath;
+        cpath
     } else {
         create_missing_config().unwrap();
         get_config_instance()
@@ -74,9 +74,13 @@ impl Config {
         .expect("config parse failed");
 
         match config.version {
-            -1.0 => tracing::warn!("Configuration version is unset! Defaulting to v1 specification"),
-            1.0 => {}, // Config verison value is Ok.
-            _ => tracing::warn!("Configuration version is set to an unknown value! Defaulting to v1 specification"),
+            -1.0 => {
+                tracing::warn!("Configuration version is unset! Defaulting to v1 specification")
+            }
+            1.0 => {} // Config verison value is Ok.
+            _ => tracing::warn!(
+                "Configuration version is set to an unknown value! Defaulting to v1 specification"
+            ),
         }
 
         *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
