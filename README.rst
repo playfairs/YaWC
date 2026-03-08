@@ -66,15 +66,16 @@ There are certain ENV variables which can be used by and for YaWC.
 What we look for
 ^^^^^^^^^^^^^^^^^
 
-============================= ======================================= ===================
-Variable                       Use Case                               Reference
-============================= ======================================= ===================
-YAWC_NO_VULKAN                 Skips Vulkan for X11                   ./src/x11.rs
-YAWC_DISABLE_10BIT             Skips 10-bit Color for udev rendering  ./src/udev.rs
-YAWC_DRM_DEVICE                Specify DRI card e.g /dev/dri/card1    ./src/udev.rs
-YAWC_GLES_DISABLE_INSTANCING   Disables gles instancing               ./src/udev.rs
-YAWC_DISABLE_DIRECT_SCANOUT    Disables Direct Scanout                ./src/udev.rs
-============================= ======================================= ===================
+============================= ========================================== =====================
+Variable                       Use Case                                  Reference
+============================= ========================================== =====================
+YAWC_NO_VULKAN                 Skips Vulkan for X11                      ./src/x11.rs
+YAWC_DISABLE_10BIT             Skips 10-bit Color for udev rendering     ./src/udev.rs
+YAWC_DRM_DEVICE                Specify DRI device e.g /dev/dri/card1     ./src/udev.rs
+YAWC_GLES_DISABLE_INSTANCING   Disables gles instancing                  ./src/udev.rs
+YAWC_DISABLE_DIRECT_SCANOUT    Disables Direct Scanout                   ./src/udev.rs
+YAWC_CONFIG_PATH               Specify config file path                  ./src/config/mod.rs
+============================= ========================================== =====================
 
 What is set by us
 ^^^^^^^^^^^^^^^^^^
@@ -82,7 +83,7 @@ What is set by us
 These only apply when running in a udev instance, so all can be found in ./src/udev.rs.
 
 ============================= ===================== ==========================================================================================
-Variable                       Value                Use Case                              
+Variable                       Value                Use Case
 ============================= ===================== ==========================================================================================
 XDG_CURRENT_DESKTOP            YaWC                 Identify that it is us as the desktop
 XDG_SESSION_DESKTOP            YaWC                 Identify that it is us as the desktop
