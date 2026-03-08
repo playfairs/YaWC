@@ -1,0 +1,96 @@
+* YaWC - Yet another Wayland Compositor
+
+YaWC is a personal manual Wayland compositor spread amongst a group of friends trying to make a desktop which fits their needs.
+
+** Building
+
+*** Prerequisites
+
+This project will require the following packages to build:
+
+- pipewire
+- seatd
+- libdisplay-info
+- alsa-lib
+- jack2
+- udev
+- pixman
+- libxkbcommon
+- libinput
+- libgbm
+
+These can also be fetched by entering a nix development environment using:
+
+#+BEGIN_SRC sh
+nix develop
+#+END_SRC
+
+*** Running build system
+
+After you have the build prerequisites, run:
+
+#+BEGIN_SRC sh
+cargo build --release
+#+END_SRC
+
+Which can also be shorthanded to:
+
+#+BEGIN_SRC sh
+cargo b -r
+#+END_SRC
+
+** Runtime
+
+This segment includes various different things.
+
+*** Dependencies
+
+There are certain dependencies you may need to install for some things to work with respective features enabled:
+
+- fontconfig
+- udev
+- OpenGL
+- x11 (for xwayland)
+- libxkbcommon
+
+*** Environment Variables
+
+There are certain environment variables which can be used by and for YaWC.
+
+**** What we look for
+
+| Variable                     | Use Case                                  | Reference           |
+|------------------------------+-------------------------------------------+---------------------|
+| YAWC_NO_VULKAN               | Skips Vulkan for X11                      | ./src/x11.rs        |
+| YAWC_DISABLE_10BIT           | Skips 10-bit Color for udev rendering     | ./src/udev.rs       |
+| YAWC_DRM_DEVICE              | Specify DRI device e.g /dev/dri/card1     | ./src/udev.rs       |
+| YAWC_GLES_DISABLE_INSTANCING | Disables gles instancing                  | ./src/udev.rs       |
+| YAWC_DISABLE_DIRECT_SCANOUT  | Disables Direct Scanout                   | ./src/udev.rs       |
+| YAWC_CONFIG_PATH             | Specify config file path                  | ./src/config/mod.rs |
+
+**** What is set by us
+
+These only apply when running in a udev instance, so all can be found in `./src/udev.rs`.
+
+| Variable                      | Value          | Use Case                                                                 |
+|-------------------------------+----------------+--------------------------------------------------------------------------|
+| XDG_CURRENT_DESKTOP           | YaWC           | Identify that it is us as the desktop                                    |
+| XDG_SESSION_DESKTOP           | YaWC           | Identify that it is us as the desktop                                    |
+| XDG_SESSION_TYPE              | wayland        | Identify that it is a Wayland instance                                   |
+| QT_QPA_PLATFORM               | wayland;xcb    | Get QT apps to attempt to load QT's Wayland plugin, fallback to xcb      |
+| ELECTRON_OZONE_PLATFORM_HINT  | wayland        | Hint to Electron that our session is Wayland                             |
+| GTK_BACKEND                   | wayland        | For GTK3.0-or-later to know we are wayland                               |
+
+You can add more of these using your configuration file:
+
+#+BEGIN_SRC kdl
+env {
+    MY_ENV_NAME "VARIABLE_CONTENT"
+}
+#+END_SRC
+
+** Licensing
+
+The start of this project was created with the help of Anvil, the example compositor which Smithay uses to test, which was MIT.
+
+The project state as it stands today is under AGPL-v3.0.
