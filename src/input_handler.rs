@@ -1118,7 +1118,7 @@ impl YawcState<UdevData> {
         }
     }
 
-    fn on_tablet_button<B: InputBackend>(&mut self, evt: B::TabletToolButtonEvent) {
+    fn on_tablet_button<B: InputBackend>(&self, evt: B::TabletToolButtonEvent) {
         let tool = self.seat.tablet_seat().get_tool(&evt.tool());
 
         if let Some(tool) = tool {

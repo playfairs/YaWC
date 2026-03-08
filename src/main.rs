@@ -5,7 +5,7 @@ static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
 
 use yawc::config::Config;
 
-fn main() -> miette::Result<(), ()> {
+fn main() {
     if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
         tracing_subscriber::fmt()
             .compact()
@@ -19,11 +19,11 @@ fn main() -> miette::Result<(), ()> {
 
     if pargs.contains(["-V", "--version"]) {
         println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-        return Ok(());
+        return;
     }
 
     let remaining = pargs.finish();
-    if !remaining.clone().is_empty() {
+    if !remaining.is_empty() {
         eprintln!("Unknown arguments: {remaining:?}");
         std::process::exit(2);
     }
@@ -52,6 +52,4 @@ fn main() -> miette::Result<(), ()> {
         tracing::info!("Starting yawc on a tty using udev");
         yawc::udev::run_udev();
     }
-
-    Ok(())
 }

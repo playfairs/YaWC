@@ -22,6 +22,7 @@ use crate::{
 };
 #[cfg(feature = "renderer_sync")]
 use smithay::backend::drm::compositor::PrimaryPlaneElement;
+use smithay::backend::drm::compositor::RenderFrameError;
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
 #[cfg(feature = "debug")]
@@ -222,6 +223,11 @@ impl Backend for UdevData {
     }
 }
 
+/// # Panics
+///
+/// Will panic if event loop panics, obviously.
+/// (if you couldnt tell this is to shut up a warning)
+#[allow(clippy::too_many_lines)]
 pub fn run_udev() {
     let mut event_loop = EventLoop::try_new().unwrap();
     let display = Display::new().unwrap();
@@ -1287,7 +1293,7 @@ impl YawcState<UdevData> {
         &mut self,
         dev_id: DrmNode,
         crtc: crtc::Handle,
-        metadata: &mut Option<DrmEventMetadata>,
+        metadata: &Option<DrmEventMetadata>,
     ) {
         profiling::scope!("frame_finish", &format!("{crtc:?}"));
 
@@ -1326,7 +1332,7 @@ impl YawcState<UdevData> {
 
         let Some(frame_duration) = output
             .current_mode()
-            .map(|mode| Duration::from_secs_f64(1_000f64 / mode.refresh as f64))
+            .map(|mode| Duration::from_secs_f64(1_000f64 / f64::from(mode.refresh)))
         else {
             return;
         };
@@ -1336,10 +1342,7 @@ impl YawcState<UdevData> {
             smithay::backend::drm::DrmEventTime::Realtime(_) => None,
         });
 
-        let seq = metadata
-            .as_ref()
-            .map(|metadata| metadata.sequence)
-            .unwrap_or(0);
+        let seq = metadata.as_ref().map_or(0, |metadata| metadata.sequence);
 
         let (clock, flags) = if let Some(tp) = tp {
             (
@@ -1365,11 +1368,11 @@ impl YawcState<UdevData> {
             WARN_ONCE.call_once(|| {
                 warn!(
                     "display running faster than expected, throttling vblanks and disabling HwClock"
-                )
+                );
             });
-            let throttled_time = tp
-                .map(|tp| tp.saturating_add(vblank_remaining_time))
-                .unwrap_or(Duration::ZERO);
+            let throttled_time = tp.map_or(Duration::ZERO, |tp| {
+                tp.saturating_add(vblank_remaining_time)
+            });
             let throttled_metadata = DrmEventMetadata {
                 sequence: seq,
                 time: DrmEventTime::Monotonic(throttled_time),
@@ -1378,8 +1381,8 @@ impl YawcState<UdevData> {
                 .handle
                 .insert_source(
                     Timer::from_duration(vblank_remaining_time),
-                    move |_, _, data| {
-                        data.frame_finish(dev_id, crtc, &mut Some(throttled_metadata));
+                    move |_, (), data| {
+                        data.frame_finish(dev_id, crtc, &Some(throttled_metadata));
                         TimeoutAction::Drop
                     },
                 )
@@ -1397,7 +1400,12 @@ impl YawcState<UdevData> {
         let schedule_render = match submit_result {
             Ok(user_data) => {
                 if let Some(mut feedback) = user_data.flatten() {
-                    feedback.presented(clock, Refresh::fixed(frame_duration), seq as u64, flags);
+                    feedback.presented(
+                        clock,
+                        Refresh::fixed(frame_duration),
+                        u64::from(seq),
+                        flags,
+                    );
                 }
 
                 true
@@ -1461,26 +1469,22 @@ impl YawcState<UdevData> {
             // and do some prediction for the next repaint.
             let repaint_delay = Duration::from_secs_f64(frame_duration.as_secs_f64() * 0.6f64);
 
-            let timer = if surface
-                .render_node
-                .map(|render_node| render_node != self.backend_data.primary_gpu)
-                .unwrap_or(true)
-            {
-                // However, if we need to do a copy, that might not be enough.
-                // (And without actual comparison to previous frames we cannot really know.)
-                // So lets ignore that in those cases to avoid thrashing performance.
-                trace!("scheduling repaint timer immediately on {:?}", crtc);
-                Timer::immediate()
-            } else {
+            let timer = if surface.render_node == Some(self.backend_data.primary_gpu) {
                 trace!(
                     "scheduling repaint timer with delay {:?} on {:?}",
                     repaint_delay, crtc
                 );
                 Timer::from_duration(repaint_delay)
+            } else {
+                // However, if we need to do a copy, that might not be enough.
+                // (And without actual comparison to previous frames we cannot really know.)
+                // So lets ignore that in those cases to avoid thrashing performance.
+                trace!("scheduling repaint timer immediately on {:?}", crtc);
+                Timer::immediate()
             };
 
             self.handle
-                .insert_source(timer, move |_, _, data| {
+                .insert_source(timer, move |_, (), data| {
                     data.render(dev_id, Some(crtc), next_frame_target);
                     TimeoutAction::Drop
                 })
@@ -1490,12 +1494,9 @@ impl YawcState<UdevData> {
 
     // If crtc is `Some()`, render it, else render all crtcs
     fn render(&mut self, node: DrmNode, crtc: Option<crtc::Handle>, frame_target: Time<Monotonic>) {
-        let device_backend = match self.backend_data.backends.get_mut(&node) {
-            Some(backend) => backend,
-            None => {
-                error!("Trying to render on non-existent backend {}", node);
-                return;
-            }
+        let Some(device_backend) = self.backend_data.backends.get_mut(&node) else {
+            error!("Trying to render on a backend which doesnt exist: {node}");
+            return;
         };
 
         if let Some(crtc) = crtc {
@@ -1505,9 +1506,10 @@ impl YawcState<UdevData> {
             for crtc in crtcs {
                 self.render_surface(node, crtc, frame_target);
             }
-        };
+        }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn render_surface(&mut self, node: DrmNode, crtc: crtc::Handle, frame_target: Time<Monotonic>) {
         profiling::scope!("render_surface", &format!("{crtc:?}"));
 
@@ -1526,15 +1528,11 @@ impl YawcState<UdevData> {
 
         self.pre_repaint(&output, frame_target);
 
-        let device = if let Some(device) = self.backend_data.backends.get_mut(&node) {
-            device
-        } else {
+        let Some(device) = self.backend_data.backends.get_mut(&node) else {
             return;
         };
 
-        let surface = if let Some(surface) = device.surfaces.get_mut(&crtc) {
-            surface
-        } else {
+        let Some(surface) = device.surfaces.get_mut(&crtc) else {
             return;
         };
 
@@ -1572,7 +1570,7 @@ impl YawcState<UdevData> {
                 let buffer = MemoryRenderBuffer::from_slice(
                     &frame.pixels_rgba,
                     Fourcc::Argb8888,
-                    (frame.width as i32, frame.height as i32),
+                    (frame.width.cast_signed(), frame.height.cast_signed()),
                     1,
                     Transform::Normal,
                     None,
@@ -1638,6 +1636,7 @@ impl YawcState<UdevData> {
             // If reschedule is true we either hit a temporary failure or more likely rendering
             // did not cause any damage on the output. In this case we just re-schedule a repaint
             // after approx. one frame to re-test for damage.
+            #[allow(clippy::cast_sign_loss)]
             let next_frame_target =
                 frame_target + Duration::from_millis(1_000_000 / output_refresh as u64);
             let reschedule_timeout =
@@ -1648,7 +1647,7 @@ impl YawcState<UdevData> {
             );
             let timer = Timer::from_duration(reschedule_timeout);
             self.handle
-                .insert_source(timer, move |_, _, data| {
+                .insert_source(timer, move |_, (), data| {
                     data.render(node, Some(crtc), next_frame_target);
                     TimeoutAction::Drop
                 })
@@ -1703,10 +1702,11 @@ fn render_surface<'a>(
         // draw the cursor as relevant
         {
             // reset the cursor if the surface is no longer alive
-            let mut reset = false;
-            if let CursorImageStatus::Surface(ref surface) = *cursor_status {
-                reset = !surface.alive();
-            }
+            let reset = if let CursorImageStatus::Surface(ref surface) = *cursor_status {
+                !surface.alive()
+            } else {
+                false
+            };
             if reset {
                 *cursor_status = CursorImageStatus::default_named();
             }
@@ -1775,13 +1775,11 @@ fn render_surface<'a>(
             (!render_frame_result.is_empty, render_frame_result.states)
         })
         .map_err(|err| match err {
-            smithay::backend::drm::compositor::RenderFrameError::PrepareFrame(err) => {
+            RenderFrameError::PrepareFrame(err) => SwapBuffersError::from(err),
+            RenderFrameError::RenderFrame(OutputDamageTrackerError::Rendering(err)) => {
                 SwapBuffersError::from(err)
             }
-            smithay::backend::drm::compositor::RenderFrameError::RenderFrame(
-                OutputDamageTrackerError::Rendering(err),
-            ) => SwapBuffersError::from(err),
-            _ => unreachable!(),
+            RenderFrameError::RenderFrame(_) => unreachable!(),
         })?;
 
     update_primary_scanout_output(space, output, dnd_icon, cursor_status, &states);

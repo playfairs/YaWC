@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
-    drawing::*,
-    render::*,
+    drawing::PointerElement,
+    render::{CustomRenderElements, render_output},
     state::{Backend, YawcState, take_presentation_feedback},
 };
 #[cfg(feature = "egl")]
@@ -88,7 +88,7 @@ impl DmabufHandler for YawcState<X11Data> {
             .import_dmabuf(&dmabuf, None)
             .is_ok()
         {
-            let _ = notifier.successful::<YawcState<X11Data>>();
+            let _ = notifier.successful::<Self>();
         } else {
             notifier.failed();
         }
@@ -107,6 +107,11 @@ impl Backend for X11Data {
     fn update_led_state(&mut self, _led_state: LedState) {}
 }
 
+/// # Panics
+///
+/// Will panic if event loop panics, obviously.
+/// (if you couldnt tell this is to shut up a warning)
+#[allow(clippy::too_many_lines)]
 pub fn run_x11() {
     let mut event_loop = EventLoop::try_new().unwrap();
     let display = Display::new().unwrap();
@@ -132,16 +137,16 @@ pub fn run_x11() {
         .build(&handle)
         .expect("Failed to create first window");
 
-    let skip_vulkan = std::env::var("YAWC_NO_VULKAN")
-        .map(|x| {
-            x == "1"
-                || x.to_lowercase() == "true"
-                || x.to_lowercase() == "yes"
-                || x.to_lowercase() == "y"
-        })
-        .unwrap_or(false);
+    let skip_vulkan = std::env::var("YAWC_NO_VULKAN").is_ok_and(|x| {
+        x == "1"
+            || x.to_lowercase() == "true"
+            || x.to_lowercase() == "yes"
+            || x.to_lowercase() == "y"
+    });
 
-    let vulkan_allocator = if !skip_vulkan {
+    let vulkan_allocator = if skip_vulkan {
+        None
+    } else {
         Instance::new(Version::VERSION_1_2, None)
             .ok()
             .and_then(|instance| {
@@ -163,33 +168,35 @@ pub fn run_x11() {
                 )
                 .ok()
             })
-    } else {
-        None
     };
 
-    let surface = match vulkan_allocator {
-        // Create the surface for the window.
-        Some(vulkan_allocator) => handle
-            .create_surface(
-                &window,
-                DmabufAllocator(vulkan_allocator),
-                context
-                    .dmabuf_render_formats()
-                    .iter()
-                    .map(|format| format.modifier),
-            )
-            .expect("Failed to create X11 surface"),
-        None => handle
-            .create_surface(
-                &window,
-                DmabufAllocator(GbmAllocator::new(device, GbmBufferFlags::RENDERING)),
-                context
-                    .dmabuf_render_formats()
-                    .iter()
-                    .map(|format| format.modifier),
-            )
-            .expect("Failed to create X11 surface"),
-    };
+    let surface = vulkan_allocator.map_or_else(
+        || {
+            handle
+                .create_surface(
+                    &window,
+                    DmabufAllocator(GbmAllocator::new(device, GbmBufferFlags::RENDERING)),
+                    context
+                        .dmabuf_render_formats()
+                        .iter()
+                        .map(|format| format.modifier),
+                )
+                .expect("Failed to create X11 surface")
+        },
+        |vulkan_allocator| {
+            // Create the surface for the window.
+            handle
+                .create_surface(
+                    &window,
+                    DmabufAllocator(vulkan_allocator),
+                    context
+                        .dmabuf_render_formats()
+                        .iter()
+                        .map(|format| format.modifier),
+                )
+                .expect("Failed to create X11 surface")
+        },
+    );
 
     #[cfg_attr(not(feature = "egl"), allow(unused_mut))]
     let mut renderer =
@@ -213,7 +220,7 @@ pub fn run_x11() {
     let size = {
         let s = window.size();
 
-        (s.w as i32, s.h as i32).into()
+        (i32::from(s.w), i32::from(s.h)).into()
     };
 
     let mode = Mode {
@@ -278,13 +285,13 @@ pub fn run_x11() {
     let output_clone = output.clone();
     event_loop
         .handle()
-        .insert_source(backend, move |event, _, data| match event {
+        .insert_source(backend, move |event, (), data| match event {
             X11Event::CloseRequested { .. } => {
                 data.running.store(false, Ordering::SeqCst);
             }
             X11Event::Resized { new_size, .. } => {
                 let output = &output_clone;
-                let size = { (new_size.w as i32, new_size.h as i32).into() };
+                let size = { (i32::from(new_size.w), i32::from(new_size.h)).into() };
 
                 data.backend_data.mode = Mode {
                     size,
@@ -304,7 +311,7 @@ pub fn run_x11() {
             X11Event::Focus { focused: false, .. } => {
                 data.release_all_keys();
             }
-            _ => {}
+            X11Event::Focus { .. } => {}
         })
         .expect("Failed to insert X11 Backend into event loop");
 
@@ -323,7 +330,7 @@ pub fn run_x11() {
             let frame_target = now
                 + output
                     .current_mode()
-                    .map(|mode| Duration::from_secs_f64(1_000f64 / mode.refresh as f64))
+                    .map(|mode| Duration::from_secs_f64(1_000f64 / f64::from(mode.refresh)))
                     .unwrap_or_default();
             state.pre_repaint(&output, frame_target);
 
@@ -359,10 +366,11 @@ pub fn run_x11() {
 
             // draw the cursor as relevant
             // reset the cursor if the surface is no longer alive
-            let mut reset = false;
-            if let CursorImageStatus::Surface(ref surface) = state.cursor_status {
-                reset = !surface.alive();
-            }
+            let reset = if let CursorImageStatus::Surface(ref surface) = state.cursor_status {
+                !surface.alive()
+            } else {
+                false
+            };
             if reset {
                 state.cursor_status = CursorImageStatus::default_named();
             }
@@ -426,6 +434,7 @@ pub fn run_x11() {
                 age.into(),
                 state.show_window_preview,
             );
+            drop(fb);
 
             match render_res {
                 Ok(render_output_result) => {
@@ -446,17 +455,14 @@ pub fn run_x11() {
                             take_presentation_feedback(&output, &state.space, &states);
                         output_presentation_feedback.presented(
                             frame_target,
-                            output
-                                .current_mode()
-                                .map(|mode| {
-                                    Refresh::fixed(Duration::from_secs_f64(
-                                        1_000f64 / mode.refresh as f64,
-                                    ))
-                                })
-                                .unwrap_or(Refresh::Unknown),
+                            output.current_mode().map_or(Refresh::Unknown, |mode| {
+                                Refresh::fixed(Duration::from_secs_f64(
+                                    1_000f64 / f64::from(mode.refresh),
+                                ))
+                            }),
                             0,
                             wp_presentation_feedback::Kind::Vsync,
-                        )
+                        );
                     }
 
                     #[cfg(feature = "debug")]

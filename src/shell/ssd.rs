@@ -54,7 +54,7 @@ impl HeaderBar {
     }
 
     pub fn clicked<BackendData: Backend>(
-        &mut self,
+        &self,
         seat: &Seat<YawcState<BackendData>>,
         state: &mut YawcState<BackendData>,
         window: &WindowElement,
@@ -105,9 +105,9 @@ impl HeaderBar {
     }
 
     pub fn touch_down<BackendData: Backend>(
-        &mut self,
+        &self,
         seat: &Seat<YawcState<BackendData>>,
-        state: &mut YawcState<BackendData>,
+        state: &YawcState<BackendData>,
         window: &WindowElement,
         serial: Serial,
     ) {
@@ -137,7 +137,7 @@ impl HeaderBar {
     }
 
     pub fn touch_up<BackendData: Backend>(
-        &mut self,
+        &self,
         _seat: &Seat<YawcState<BackendData>>,
         state: &mut YawcState<BackendData>,
         window: &WindowElement,

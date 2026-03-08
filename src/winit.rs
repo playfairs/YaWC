@@ -48,8 +48,11 @@ use smithay::{
 };
 use tracing::{error, info, warn};
 
-use crate::state::{Backend, YawcState, take_presentation_feedback};
-use crate::{drawing::*, render::*};
+use crate::{
+    drawing::PointerElement,
+    render::{CustomRenderElements, render_output},
+    state::{Backend, YawcState, take_presentation_feedback},
+};
 
 pub const OUTPUT_NAME: &str = "winit";
 
@@ -80,7 +83,7 @@ impl DmabufHandler for YawcState<WinitData> {
             .import_dmabuf(&dmabuf, None)
             .is_ok()
         {
-            let _ = notifier.successful::<YawcState<WinitData>>();
+            let _ = notifier.successful::<Self>();
         } else {
             notifier.failed();
         }
@@ -99,6 +102,11 @@ impl Backend for WinitData {
     fn update_led_state(&mut self, _led_state: LedState) {}
 }
 
+/// # Panics
+///
+/// Will panic if event loop panics, obviously.
+/// (if you couldnt tell this is to shut up a warning)
+#[allow(clippy::too_many_lines)]
 pub fn run_winit() {
     let mut event_loop = EventLoop::try_new().unwrap();
     let display = Display::new().unwrap();
@@ -181,21 +189,24 @@ pub fn run_winit() {
 
     // if we failed to build dmabuf feedback we fall back to dmabuf v3
     // Note: egl on Mesa requires either v4 or wl_drm (initialized with bind_wl_display)
-    let dmabuf_state = if let Some(default_feedback) = dmabuf_default_feedback {
-        let mut dmabuf_state = DmabufState::new();
-        let dmabuf_global = dmabuf_state
-            .create_global_with_default_feedback::<YawcState<WinitData>>(
-                &display.handle(),
-                &default_feedback,
-            );
-        (dmabuf_state, dmabuf_global, Some(default_feedback))
-    } else {
-        let dmabuf_formats = backend.renderer().dmabuf_formats();
-        let mut dmabuf_state = DmabufState::new();
-        let dmabuf_global =
-            dmabuf_state.create_global::<YawcState<WinitData>>(&display.handle(), dmabuf_formats);
-        (dmabuf_state, dmabuf_global, None)
-    };
+    let dmabuf_state = dmabuf_default_feedback.map_or_else(
+        || {
+            let dmabuf_formats = backend.renderer().dmabuf_formats();
+            let mut dmabuf_state = DmabufState::new();
+            let dmabuf_global = dmabuf_state
+                .create_global::<YawcState<WinitData>>(&display.handle(), dmabuf_formats);
+            (dmabuf_state, dmabuf_global, None)
+        },
+        |default_feedback| {
+            let mut dmabuf_state = DmabufState::new();
+            let dmabuf_global = dmabuf_state
+                .create_global_with_default_feedback::<YawcState<WinitData>>(
+                    &display.handle(),
+                    &default_feedback,
+                );
+            (dmabuf_state, dmabuf_global, Some(default_feedback))
+        },
+    );
 
     #[cfg(feature = "egl")]
     if backend
@@ -260,7 +271,7 @@ pub fn run_winit() {
             let frame_target = now
                 + output
                     .current_mode()
-                    .map(|mode| Duration::from_secs_f64(1_000f64 / mode.refresh as f64))
+                    .map(|mode| Duration::from_secs_f64(1_000f64 / f64::from(mode.refresh)))
                     .unwrap_or_default();
             state.pre_repaint(&output, frame_target);
 
@@ -268,10 +279,11 @@ pub fn run_winit() {
 
             // draw the cursor as relevant
             // reset the cursor if the surface is no longer alive
-            let mut reset = false;
-            if let CursorImageStatus::Surface(ref surface) = state.cursor_status {
-                reset = !surface.alive();
-            }
+            let reset = if let CursorImageStatus::Surface(ref surface) = state.cursor_status {
+                !surface.alive()
+            } else {
+                false
+            };
             if reset {
                 state.cursor_status = CursorImageStatus::default_named();
             }
@@ -382,7 +394,7 @@ pub fn run_winit() {
                 )
                 .map_err(|err| match err {
                     OutputDamageTrackerError::Rendering(err) => err.into(),
-                    _ => unreachable!(),
+                    OutputDamageTrackerError::OutputNoMode(_) => unreachable!(),
                 })
             });
 
@@ -421,17 +433,14 @@ pub fn run_winit() {
                             take_presentation_feedback(&output, &state.space, &states);
                         output_presentation_feedback.presented(
                             frame_target,
-                            output
-                                .current_mode()
-                                .map(|mode| {
-                                    Refresh::fixed(Duration::from_secs_f64(
-                                        1_000f64 / mode.refresh as f64,
-                                    ))
-                                })
-                                .unwrap_or(Refresh::Unknown),
+                            output.current_mode().map_or(Refresh::Unknown, |mode| {
+                                Refresh::fixed(Duration::from_secs_f64(
+                                    1_000f64 / f64::from(mode.refresh),
+                                ))
+                            }),
                             0,
                             wp_presentation_feedback::Kind::Vsync,
-                        )
+                        );
                     }
 
                     // Send frame events so that client start drawing their next frame

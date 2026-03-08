@@ -58,7 +58,7 @@ pub use self::grabs::*;
 fn fullscreen_output_geometry(
     wl_surface: &WlSurface,
     wl_output: Option<&wl_output::WlOutput>,
-    space: &mut Space<WindowElement>,
+    space: &Space<WindowElement>,
 ) -> Option<Rectangle<i32, Logical>> {
     // First test if a specific output has been requested
     // if the requested output is not found ignore the request
@@ -301,7 +301,7 @@ pub struct SurfaceData {
 fn ensure_initial_configure(
     surface: &WlSurface,
     space: &Space<WindowElement>,
-    popups: &mut PopupManager,
+    popups: &PopupManager,
 ) {
     with_surface_tree_upward(
         surface,
