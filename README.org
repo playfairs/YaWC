@@ -2,6 +2,18 @@
 
 YaWC is a personal manual Wayland compositor spread amongst a group of friends trying to make a desktop which fits their needs.
 
+** Nix flake
+
+Nix is stupid when it comes to submodules, so you may need to append "'git+file:..?dir=..'".
+
+An example being:
+
+#+BEGIN_SRC sh
+nix develop 'git+file:..?dir=..'
+#+END_SRC
+
+to enter a devshell from this directory.
+
 ** Building
 
 *** Prerequisites
