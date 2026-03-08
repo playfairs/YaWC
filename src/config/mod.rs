@@ -64,8 +64,6 @@ fn parse_config(path: &str) -> miette::Result<Config> {
 
 impl Config {
     pub fn init_config_instance() {
-        let mut mut_cinst = CONFIG_INSTANCE.write().unwrap();
-
         let config = parse_config(
             &get_config_instance()
                 .into_os_string()
@@ -80,7 +78,7 @@ impl Config {
             _ => tracing::warn!("Configuration version is set to an unknown value! Defaulting to v1 specification"),
         }
 
-        *mut_cinst = Some(Arc::new(config));
+        *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
     }
 
     /// Read `RwLock<Option<Arc<KdlDocument>>>` returning
