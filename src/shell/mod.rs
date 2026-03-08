@@ -402,16 +402,27 @@ fn ensure_initial_configure(
     };
 }
 
+fn get_random_u32() -> Result<u32, getrandom::Error> {
+    let mut buf = [0u8; 4];
+    getrandom::fill(&mut buf)?;
+    Ok(u32::from_ne_bytes(buf))
+}
+
+fn random_range(start: i32, end: i32) -> i32 {
+    assert!(start < end, "Invalid range");
+    if let Ok(n) = get_random_u32() {
+        start + (n % ((end - start) as u32)) as i32
+    } else {
+        0
+    }
+}
+
 fn place_new_window(
     space: &mut Space<WindowElement>,
     pointer_location: Point<f64, Logical>,
     window: &WindowElement,
     activate: bool,
 ) {
-    // place the window at a random location on same output as pointer
-    // or if there is not output in a [0;800]x[0;800] square
-    use rand::distr::{Distribution, Uniform};
-
     let output = space
         .output_under(pointer_location)
         .next()
@@ -436,11 +447,9 @@ fn place_new_window(
 
     let max_x = output_geometry.loc.x + (((output_geometry.size.w as f32) / 3.0) * 2.0) as i32;
     let max_y = output_geometry.loc.y + (((output_geometry.size.h as f32) / 3.0) * 2.0) as i32;
-    let x_range = Uniform::new(output_geometry.loc.x, max_x);
-    let y_range = Uniform::new(output_geometry.loc.y, max_y);
-    let mut rng = rand::rng();
-    let x = x_range.unwrap().sample(&mut rng);
-    let y = y_range.unwrap().sample(&mut rng);
+
+    let x = random_range(output_geometry.loc.x, max_x);
+    let y = random_range(output_geometry.loc.y, max_y);
 
     space.map_element(window.clone(), (x, y), activate);
 }
