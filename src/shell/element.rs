@@ -202,7 +202,7 @@ impl<BackendData: Backend> PointerTarget<YawcState<BackendData>> for SSD {
         data: &mut YawcState<BackendData>,
         event: &ButtonEvent,
     ) {
-        let mut state = self.0.decoration_state();
+        let state = self.0.decoration_state();
         if state.is_ssd {
             state.header_bar.clicked(seat, data, &self.0, event.serial);
         }
@@ -309,7 +309,7 @@ impl<BackendData: Backend> TouchTarget<YawcState<BackendData>> for SSD {
         event: &smithay::input::touch::UpEvent,
         _seq: Serial,
     ) {
-        let mut state = self.0.decoration_state();
+        let state = self.0.decoration_state();
         if state.is_ssd {
             state.header_bar.touch_up(seat, data, &self.0, event.serial);
         }

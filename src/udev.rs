@@ -11,8 +11,8 @@ use std::{
 
 use crate::{
     config::Config,
-    drawing::*,
-    render::*,
+    drawing::PointerElement,
+    render::{OutputRenderElements, CustomRenderElements, output_elements},
     shell::WindowElement,
     state::{Backend, YawcState, take_presentation_feedback, update_primary_scanout_output},
 };
@@ -153,15 +153,15 @@ impl UdevData {
         if self.debug_flags != flags {
             self.debug_flags = flags;
 
-            for (_, backend) in self.backends.iter_mut() {
-                for (_, surface) in backend.surfaces.iter_mut() {
+            for backend in self.backends.values_mut() {
+                for surface in backend.surfaces.values_mut() {
                     surface.drm_output.set_debug_flags(flags);
                 }
             }
         }
     }
 
-    pub fn debug_flags(&self) -> DebugFlags {
+    pub const fn debug_flags(&self) -> DebugFlags {
         self.debug_flags
     }
 }
@@ -185,7 +185,7 @@ impl DmabufHandler for YawcState<UdevData> {
             .is_ok()
         {
             dmabuf.set_node(self.backend_data.primary_gpu);
-            let _ = notifier.successful::<YawcState<UdevData>>();
+            _ = notifier.successful::<Self>();
         } else {
             notifier.failed();
         }
@@ -217,7 +217,7 @@ impl Backend for UdevData {
     }
 
     fn update_led_state(&mut self, led_state: LedState) {
-        for keyboard in self.keyboards.iter_mut() {
+        for keyboard in &mut self.keyboards {
             keyboard.led_update(led_state.into());
         }
     }
@@ -273,25 +273,21 @@ pub fn run_udev() {
     /*
      * Initialize the compositor
      */
-    let primary_gpu = if let Ok(var) = std::env::var("YAWC_DRM_DEVICE") {
-        DrmNode::from_path(var).expect("Invalid drm device path")
-    } else {
-        primary_gpu(session.seat())
-            .unwrap()
-            .and_then(|x| {
-                DrmNode::from_path(x)
-                    .ok()?
-                    .node_with_type(NodeType::Render)?
-                    .ok()
-            })
-            .unwrap_or_else(|| {
-                all_gpus(session.seat())
-                    .unwrap()
-                    .into_iter()
-                    .find_map(|x| DrmNode::from_path(x).ok())
-                    .expect("No GPU!")
-            })
-    };
+    let primary_gpu = std::env::var("YAWC_DRM_DEVICE").map_or_else(|_| primary_gpu(session.seat())
+        .unwrap()
+        .and_then(|x| {
+            DrmNode::from_path(x)
+                .ok()?
+                .node_with_type(NodeType::Render)?
+                .ok()
+        })
+        .unwrap_or_else(|| {
+            all_gpus(session.seat())
+                .unwrap()
+                .into_iter()
+                .find_map(|x| DrmNode::from_path(x).ok())
+                .expect("No GPU!")
+        }), |var| DrmNode::from_path(var).expect("Invalid drm device path"));
     info!("Using {} as primary gpu.", primary_gpu);
 
     let gpus = GpuManager::new(GbmGlesBackend::with_factory(|display| {
@@ -347,7 +343,7 @@ pub fn run_udev() {
      */
     event_loop
         .handle()
-        .insert_source(libinput_backend, move |mut event, _, data| {
+        .insert_source(libinput_backend, move |mut event, (), data| {
             let dh = data.backend_data.dh.clone();
             if let InputEvent::DeviceAdded { device } = &mut event {
                 if device.has_capability(DeviceCapability::Keyboard) {
@@ -366,7 +362,7 @@ pub fn run_udev() {
                 data.backend_data.keyboards.retain(|item| item != device);
             }
 
-            data.process_input_event(&dh, event)
+            data.process_input_event(&dh, event);
         })
         .unwrap();
 
@@ -422,11 +418,11 @@ pub fn run_udev() {
     // any display only node can fall back to the primary node for rendering
     let primary_node = primary_gpu
         .node_with_type(NodeType::Primary)
-        .and_then(|node| node.ok());
+        .unwrap()
+        .ok();
     let primary_device = udev_backend.device_list().find(|(device_id, _)| {
         primary_node
-            .map(|primary_node| *device_id == primary_node.dev_id())
-            .unwrap_or(false)
+            .is_some_and(|primary_node| *device_id == primary_node.dev_id())
             || *device_id == primary_gpu.dev_id()
     });
 
@@ -497,7 +493,7 @@ pub fn run_udev() {
             "Trying to initialize EGL Hardware Acceleration",
         );
         match renderer.bind_wl_display(&display_handle) {
-            Ok(_) => info!("EGL hardware-acceleration enabled"),
+            Ok(()) => info!("EGL hardware-acceleration enabled"),
             Err(err) => info!(?err, "Failed to initialize EGL hardware-acceleration"),
         }
     }
@@ -541,7 +537,8 @@ pub fn run_udev() {
         .backend_data
         .primary_gpu
         .node_with_type(NodeType::Primary)
-        .and_then(|x| x.ok())
+        .unwrap()
+        .ok()
         && let Some(backend) = state.backend_data.backends.get(&primary_node)
     {
         let import_device = backend.drm_output_manager.device().device_fd().clone();
@@ -554,7 +551,7 @@ pub fn run_udev() {
 
     event_loop
         .handle()
-        .insert_source(udev_backend, move |event, _, data| match event {
+        .insert_source(udev_backend, move |event, (), data| match event {
             UdevEvent::Added { device_id, path } => {
                 if let Err(err) = DrmNode::from_dev_id(device_id)
                     .map_err(DeviceAddError::DrmNode)
@@ -565,12 +562,12 @@ pub fn run_udev() {
             }
             UdevEvent::Changed { device_id } => {
                 if let Ok(node) = DrmNode::from_dev_id(device_id) {
-                    data.device_changed(node)
+                    data.device_changed(node);
                 }
             }
             UdevEvent::Removed { device_id } => {
                 if let Ok(node) = DrmNode::from_dev_id(device_id) {
-                    data.device_removed(node)
+                    data.device_removed(node);
                 }
             }
         })
@@ -618,7 +615,7 @@ impl DrmLeaseHandler for YawcState<UdevData> {
             .backend_data
             .backends
             .get(&node)
-            .ok_or(LeaseRejected::default())?;
+            .ok_or_else(LeaseRejected::default)?;
 
         let drm_device = backend.drm_output_manager.device();
         let mut builder = DrmLeaseBuilder::new(drm_device);
@@ -792,15 +789,13 @@ fn get_surface_dmabuf_feedback(
         .collect::<FormatSet>();
 
     let builder = DmabufFeedbackBuilder::new(primary_gpu.dev_id(), primary_formats);
-    let render_feedback = if let Some(render_node) = render_node {
+    let render_feedback = render_node.map_or_else(|| builder.clone().build().unwrap(), |render_node| {
         builder
             .clone()
             .add_preference_tranche(render_node.dev_id(), None, render_formats.clone())
             .build()
             .unwrap()
-    } else {
-        builder.clone().build().unwrap()
-    };
+    });
 
     let scanout_feedback = builder
         .add_preference_tranche(
@@ -819,6 +814,7 @@ fn get_surface_dmabuf_feedback(
 }
 
 impl YawcState<UdevData> {
+    #[allow(clippy::too_many_lines)]
     fn device_added(&mut self, node: DrmNode, path: &Path) -> Result<(), DeviceAddError> {
         // Try to open the device
         let fd = self
@@ -840,10 +836,10 @@ impl YawcState<UdevData> {
             .handle
             .insert_source(
                 notifier,
-                move |event, metadata, data: &mut YawcState<_>| match event {
+                move |event, metadata, data: &mut Self | match event {
                     DrmEvent::VBlank(crtc) => {
                         profiling::scope!("vblank", &format!("{crtc:?}"));
-                        data.frame_finish(node, crtc, metadata);
+                        data.frame_finish(node, crtc, *metadata);
                     }
                     DrmEvent::Error(error) => {
                         error!("{:?}", error);
@@ -941,7 +937,7 @@ impl YawcState<UdevData> {
                 non_desktop_connectors: Vec::new(),
                 render_node,
                 surfaces: HashMap::new(),
-                leasing_global: DrmLeaseState::new::<YawcState<UdevData>>(
+                leasing_global: DrmLeaseState::new::<Self>(
                     &self.display_handle,
                     &node,
                 )
@@ -958,15 +954,14 @@ impl YawcState<UdevData> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     fn connector_connected(
         &mut self,
         node: DrmNode,
-        connector: connector::Info,
+        connector: &connector::Info,
         crtc: crtc::Handle,
     ) {
-        let device = if let Some(device) = self.backend_data.backends.get_mut(&node) {
-            device
-        } else {
+        let Some(device) = self.backend_data.backends.get_mut(&node) else {
             return;
         };
 
@@ -1003,22 +998,11 @@ impl YawcState<UdevData> {
             })
             .unwrap_or(false);
 
-        let display_info = display_info::for_connector(drm_device, connector.handle());
+        let display_info = display_info::for_connector(drm_device, connector.handle()).unwrap();
 
-        let make = display_info
-            .as_ref()
-            .and_then(|info| info.make())
-            .unwrap_or_else(|| "Unknown".into());
-
-        let model = display_info
-            .as_ref()
-            .and_then(|info| info.model())
-            .unwrap_or_else(|| "Unknown".into());
-
-        let serial_number = display_info
-            .as_ref()
-            .and_then(|info| info.serial())
-            .unwrap_or_else(|| "Unknown".into());
+        let make = display_info.make().unwrap_or_else(|| "Unknown".into());
+        let model = display_info.model().unwrap_or_else(|| "Unknown".into());
+        let serial_number = display_info.serial().unwrap_or_else(|| "Unknown".into());
 
         if non_desktop {
             info!(
@@ -1029,7 +1013,7 @@ impl YawcState<UdevData> {
                 .non_desktop_connectors
                 .push((connector.handle(), crtc));
             if let Some(lease_state) = device.leasing_global.as_mut() {
-                lease_state.add_connector::<YawcState<UdevData>>(
+                lease_state.add_connector::<Self>(
                     connector.handle(),
                     output_name,
                     format!("{make} {model}"),
@@ -1049,14 +1033,14 @@ impl YawcState<UdevData> {
             let output = Output::new(
                 output_name,
                 PhysicalProperties {
-                    size: (phys_w as i32, phys_h as i32).into(),
+                    size: (phys_w.cast_signed(), phys_h.cast_signed()).into(),
                     subpixel: connector.subpixel().into(),
                     make,
                     model,
                     serial_number,
                 },
             );
-            let global = output.create_global::<YawcState<UdevData>>(&self.display_handle);
+            let global = output.create_global::<Self>(&self.display_handle);
 
             let x = self.space.outputs().fold(0, |acc, o| {
                 acc + self.space.output_geometry(o).unwrap().size.w
@@ -1106,7 +1090,8 @@ impl YawcState<UdevData> {
                 planes.overlay = vec![];
             }
 
-            let drm_output = match device
+            let value = 
+                device
                 .drm_output_manager
                 .lock()
                 .initialize_output::<_, OutputRenderElements<UdevRenderer<'_>, WindowRenderElement<UdevRenderer<'_>>>>(
@@ -1117,7 +1102,8 @@ impl YawcState<UdevData> {
                     Some(planes),
                     &mut renderer,
                     &DrmOutputRenderElements::default(),
-                ) {
+                );
+            let drm_output = match value {
                 Ok(drm_output) => drm_output,
                 Err(err) => {
                     warn!("Failed to initialize drm output: {}", err);
@@ -1168,12 +1154,10 @@ impl YawcState<UdevData> {
     fn connector_disconnected(
         &mut self,
         node: DrmNode,
-        connector: connector::Info,
+        connector: &connector::Info,
         crtc: crtc::Handle,
     ) {
-        let device = if let Some(device) = self.backend_data.backends.get_mut(&node) {
-            device
-        } else {
+        let Some(device) = self.backend_data.backends.get_mut(&node) else {
             return;
         };
 
@@ -1209,9 +1193,7 @@ impl YawcState<UdevData> {
     }
 
     fn device_changed(&mut self, node: DrmNode) {
-        let device = if let Some(device) = self.backend_data.backends.get_mut(&node) {
-            device
-        } else {
+        let Some(device) = self.backend_data.backends.get_mut(&node) else {
             return;
         };
 
@@ -1232,18 +1214,17 @@ impl YawcState<UdevData> {
                     connector,
                     crtc: Some(crtc),
                 } => {
-                    self.connector_connected(node, connector, crtc);
+                    self.connector_connected(node, &connector, crtc);
                 }
                 DrmScanEvent::Disconnected {
                     connector,
                     crtc: Some(crtc),
                 } => {
-                    self.connector_disconnected(node, connector, crtc);
+                    self.connector_disconnected(node, &connector, crtc);
                 }
                 // The connector's mode list changed while it stayed connected (e.g. EDID
                 // arrived after the initial probe returned empty/fallback modes). Compositors
                 // should re-evaluate the output's mode selection and recreate the surface here.
-                DrmScanEvent::Changed { .. } => {}
                 _ => {}
             }
         }
@@ -1253,9 +1234,7 @@ impl YawcState<UdevData> {
     }
 
     fn device_removed(&mut self, node: DrmNode) {
-        let device = if let Some(device) = self.backend_data.backends.get_mut(&node) {
-            device
-        } else {
+        let Some(device) = self.backend_data.backends.get_mut(&node) else {
             return;
         };
 
@@ -1266,7 +1245,7 @@ impl YawcState<UdevData> {
             .collect();
 
         for (connector, crtc) in crtcs {
-            self.connector_disconnected(node, connector, crtc);
+            self.connector_disconnected(node, &connector, crtc);
         }
 
         debug!("Surfaces dropped");
@@ -1274,7 +1253,7 @@ impl YawcState<UdevData> {
         // drop the backends on this side
         if let Some(mut backend_data) = self.backend_data.backends.remove(&node) {
             if let Some(mut leasing_global) = backend_data.leasing_global.take() {
-                leasing_global.disable_global::<YawcState<UdevData>>();
+                leasing_global.disable_global::<Self>();
             }
 
             if let Some(render_node) = backend_data.render_node {
@@ -1289,28 +1268,23 @@ impl YawcState<UdevData> {
         crate::shell::fixup_positions(&mut self.space, self.pointer.current_location());
     }
 
+    #[allow(clippy::too_many_lines)]
     fn frame_finish(
         &mut self,
         dev_id: DrmNode,
         crtc: crtc::Handle,
-        metadata: &Option<DrmEventMetadata>,
+        metadata: Option<DrmEventMetadata>,
     ) {
         profiling::scope!("frame_finish", &format!("{crtc:?}"));
 
-        let device_backend = match self.backend_data.backends.get_mut(&dev_id) {
-            Some(backend) => backend,
-            None => {
-                error!("Trying to finish frame on non-existent backend {}", dev_id);
-                return;
-            }
+        let Some(device_backend) = self.backend_data.backends.get_mut(&dev_id) else {
+            error!("Trying to finish frame on non-existent backend {}", dev_id);
+            return;
         };
 
-        let surface = match device_backend.surfaces.get_mut(&crtc) {
-            Some(surface) => surface,
-            None => {
-                error!("Trying to finish frame on non-existent crtc {:?}", crtc);
-                return;
-            }
+        let Some(surface) = device_backend.surfaces.get_mut(&crtc) else {
+            error!("Trying to finish frame on non-existent crtc {crtc:?}");
+            return;
         };
 
         if let Some(timer_token) = surface.vblank_throttle_timer.take() {
@@ -1382,7 +1356,7 @@ impl YawcState<UdevData> {
                 .insert_source(
                     Timer::from_duration(vblank_remaining_time),
                     move |_, (), data| {
-                        data.frame_finish(dev_id, crtc, &Some(throttled_metadata));
+                        data.frame_finish(dev_id, crtc, Some(throttled_metadata));
                         TimeoutAction::Drop
                     },
                 )

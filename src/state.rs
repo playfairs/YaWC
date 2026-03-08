@@ -1005,11 +1005,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
                     });
                 }
 
-                if primary_scanout_output
-                    .as_ref()
-                    .map(|o| o == output)
-                    .unwrap_or(true)
-                {
+                if primary_scanout_output.as_ref().is_none_or(|o| o == output) {
                     let fifo_barrier = states
                         .cached_state
                         .get::<FifoBarrierCachedState>()
@@ -1055,11 +1051,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
                     });
                 }
 
-                if primary_scanout_output
-                    .as_ref()
-                    .map(|o| o == output)
-                    .unwrap_or(true)
-                {
+                if primary_scanout_output.as_ref().is_none_or(|o| o == output) {
                     let fifo_barrier = states
                         .cached_state
                         .get::<FifoBarrierCachedState>()
@@ -1106,11 +1098,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
                     });
                 }
 
-                if primary_scanout_output
-                    .as_ref()
-                    .map(|o| o == output)
-                    .unwrap_or(true)
-                {
+                if primary_scanout_output.as_ref().is_none_or(|o| o == output) {
                     let fifo_barrier = states
                         .cached_state
                         .get::<FifoBarrierCachedState>()
@@ -1138,11 +1126,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
                     });
                 }
 
-                if primary_scanout_output
-                    .as_ref()
-                    .map(|o| o == output)
-                    .unwrap_or(true)
-                {
+                if primary_scanout_output.as_ref().is_none_or(|o| o == output) {
                     let fifo_barrier = states
                         .cached_state
                         .get::<FifoBarrierCachedState>()
@@ -1197,6 +1181,7 @@ pub fn update_primary_scanout_output(
             );
         });
     }
+    drop(map);
 
     if let CursorImageStatus::Surface(surface) = cursor_status {
         with_surfaces_surface_tree(surface, |surface, states| {
@@ -1258,6 +1243,7 @@ pub fn take_presentation_feedback(
             },
         );
     }
+    drop(map);
 
     output_presentation_feedback
 }
