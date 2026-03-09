@@ -1,3 +1,20 @@
 envs {
 	FAVOURITE_FOOD "lettuce"
 }
+
+binds {
+	Mod+q { close-window; }
+	Mod+Shift+q { quit; }
+	Mod+Return { spawn "alacritty"; }
+	Mod+Shift+m { scale-down; }
+	Mod+Shift+p { scale-up; }
+	Mod+1 { screen 1; }
+	Mod+2 { screen 2; }
+	Mod+3 { screen 3; }
+	Mod+4 { screen 4; }
+	Mod+5 { screen 5; }
+	Mod+6 { screen 6; }
+	Mod+7 { screen 7; }
+	Mod+8 { screen 8; }
+	Mod+9 { screen 9; }
+}
