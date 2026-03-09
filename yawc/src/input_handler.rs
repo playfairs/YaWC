@@ -18,7 +18,7 @@ use smithay::{
     },
     desktop::{WindowSurfaceType, layer_map_for_output},
     input::{
-        keyboard::{FilterResult, Keysym, ModifiersState, keysyms as xkb},
+        keyboard::{FilterResult, Keysym, ModifiersState},
         pointer::{AxisFrame, ButtonEvent, MotionEvent},
     },
     output::Scale,
@@ -72,14 +72,15 @@ use smithay::{
 impl<BackendData: Backend> YawcState<BackendData> {
     // Allow in this method because of existing usage
     #[allow(clippy::uninlined_format_args)]
-    fn process_common_key_action(&mut self, action: KeyAction) {
+    fn process_common_key_action(&mut self, action: yawc_config::binds::Actions) {
+        use yawc_config::binds::Actions;
         match action {
-            KeyAction::Exit => {
+            Actions::Quit => {
                 info!("Quitting.");
                 self.running.store(false, Ordering::SeqCst);
             }
 
-            KeyAction::DestroyFocusedClient => {
+            Actions::CloseWindow => {
                 info!("Quitting focused surface.");
                 if let Some(keyboard) = self.seat.get_keyboard()
                     && let Some(KeyboardFocusTarget::Window(window)) = keyboard.current_focus()
@@ -91,7 +92,8 @@ impl<BackendData: Backend> YawcState<BackendData> {
                 }
             }
 
-            KeyAction::Exec(cmd) => {
+            Actions::Spawn(vcmd) => {
+                let cmd = vcmd.join(" ");
                 info!(cmd, "Starting program");
 
                 if let Err(e) = Command::new(&cmd)
@@ -113,11 +115,11 @@ impl<BackendData: Backend> YawcState<BackendData> {
                 }
             }
 
-            KeyAction::TogglePreview => {
+            Actions::TogglePreview => {
                 self.show_window_preview = !self.show_window_preview;
             }
 
-            KeyAction::ToggleDecorations => {
+            Actions::ToggleDecorations => {
                 for element in self.space.elements() {
                     #[allow(irrefutable_let_patterns)]
                     if let Some(toplevel) = element.0.toplevel() {
@@ -148,7 +150,11 @@ impl<BackendData: Backend> YawcState<BackendData> {
         }
     }
 
-    fn keyboard_key_to_action<B: InputBackend>(&mut self, evt: B::KeyboardKeyEvent) -> KeyAction {
+    fn keyboard_key_to_action<B: InputBackend>(
+        &mut self,
+        evt: B::KeyboardKeyEvent,
+    ) -> yawc_config::binds::Actions {
+        use yawc_config::binds::Actions;
         let keycode = evt.key_code();
         let state = evt.state();
         debug!(?keycode, ?state, "key");
@@ -174,7 +180,7 @@ impl<BackendData: Backend> YawcState<BackendData> {
                     keyboard.input::<(), _>(self, keycode, state, serial, time, |_, _, _| {
                         FilterResult::Forward
                     });
-                    return KeyAction::None;
+                    return Actions::None;
                 };
             }
         }
@@ -215,12 +221,12 @@ impl<BackendData: Backend> YawcState<BackendData> {
                         if !inhibited {
                             let action = process_keyboard_shortcut(*modifiers, keysym);
 
-                            if action != KeyAction::None {
+                            if action != Actions::None {
                                 suppressed_keys.push(keysym);
                             }
 
                             Some(action)
-                                .filter(|x| x != &KeyAction::None)
+                                .filter(|x| x != &Actions::None)
                                 .map(FilterResult::Intercept)
                                 .unwrap_or(FilterResult::Forward)
                         } else {
@@ -230,14 +236,14 @@ impl<BackendData: Backend> YawcState<BackendData> {
                         let suppressed = suppressed_keys.contains(&keysym);
                         if suppressed {
                             suppressed_keys.retain(|k| *k != keysym);
-                            FilterResult::Intercept(KeyAction::None)
+                            FilterResult::Intercept(Actions::None)
                         } else {
                             FilterResult::Forward
                         }
                     }
                 },
             )
-            .unwrap_or(KeyAction::None);
+            .unwrap_or(Actions::None);
 
         self.suppressed_keys = suppressed_keys;
         action
@@ -472,9 +478,10 @@ impl<BackendData: Backend> YawcState<BackendData> {
         event: InputEvent<B>,
         output_name: &str,
     ) {
+        use yawc_config::binds::Actions;
         match event {
             InputEvent::Keyboard { event } => match self.keyboard_key_to_action::<B>(event) {
-                KeyAction::ScaleUp => {
+                Actions::ScaleUp => {
                     let output = self
                         .space
                         .outputs()
@@ -495,7 +502,7 @@ impl<BackendData: Backend> YawcState<BackendData> {
                     self.backend_data.reset_buffers(&output);
                 }
 
-                KeyAction::ScaleDown => {
+                Actions::ScaleDown => {
                     let output = self
                         .space
                         .outputs()
@@ -516,7 +523,7 @@ impl<BackendData: Backend> YawcState<BackendData> {
                     self.backend_data.reset_buffers(&output);
                 }
 
-                KeyAction::RotateOutput => {
+                Actions::RotateOutput => {
                     let output = self
                         .space
                         .outputs()
@@ -542,12 +549,12 @@ impl<BackendData: Backend> YawcState<BackendData> {
                 }
 
                 action => match action {
-                    KeyAction::None
-                    | KeyAction::Exit
-                    | KeyAction::DestroyFocusedClient
-                    | KeyAction::Exec(_)
-                    | KeyAction::TogglePreview
-                    | KeyAction::ToggleDecorations => self.process_common_key_action(action),
+                    Actions::None
+                    | Actions::Quit
+                    | Actions::CloseWindow
+                    | Actions::Spawn(_)
+                    | Actions::TogglePreview
+                    | Actions::ToggleDecorations => self.process_common_key_action(action),
 
                     _ => tracing::warn!(
                         ?action,
@@ -618,16 +625,17 @@ impl YawcState<UdevData> {
         dh: &DisplayHandle,
         event: InputEvent<B>,
     ) {
+        use yawc_config::binds::Actions;
         match event {
             InputEvent::Keyboard { event, .. } => match self.keyboard_key_to_action::<B>(event) {
                 #[cfg(feature = "udev")]
-                KeyAction::VtSwitch(vt) => {
+                Actions::VtSwitch(vt) => {
                     info!(to = vt, "Trying to switch vt");
                     if let Err(err) = self.backend_data.session.change_vt(vt) {
                         error!(vt, "Error switching vt: {}", err);
                     }
                 }
-                KeyAction::Screen(num) => {
+                Actions::Screen(num) => {
                     let geometry = self
                         .space
                         .outputs()
@@ -652,7 +660,7 @@ impl YawcState<UdevData> {
                         pointer.frame(self);
                     }
                 }
-                KeyAction::ScaleUp => {
+                Actions::ScaleUp => {
                     let pos = self.pointer.current_location().to_i32_round();
                     let output = self
                         .space
@@ -697,7 +705,7 @@ impl YawcState<UdevData> {
                         self.backend_data.reset_buffers(&output);
                     }
                 }
-                KeyAction::ScaleDown => {
+                Actions::ScaleDown => {
                     let pos = self.pointer.current_location().to_i32_round();
                     let output = self
                         .space
@@ -742,7 +750,7 @@ impl YawcState<UdevData> {
                         self.backend_data.reset_buffers(&output);
                     }
                 }
-                KeyAction::RotateOutput => {
+                Actions::RotateOutput => {
                     let pos = self.pointer.current_location().to_i32_round();
                     let output = self
                         .space
@@ -770,19 +778,19 @@ impl YawcState<UdevData> {
                         self.backend_data.reset_buffers(&output);
                     }
                 }
-                KeyAction::ToggleTint => {
+                Actions::ToggleTint => {
                     let mut debug_flags = self.backend_data.debug_flags();
                     debug_flags.toggle(DebugFlags::TINT);
                     self.backend_data.set_debug_flags(debug_flags);
                 }
 
                 action => match action {
-                    KeyAction::None
-                    | KeyAction::Exit
-                    | KeyAction::DestroyFocusedClient
-                    | KeyAction::Exec(_)
-                    | KeyAction::TogglePreview
-                    | KeyAction::ToggleDecorations => self.process_common_key_action(action),
+                    Actions::None
+                    | Actions::Quit
+                    | Actions::CloseWindow
+                    | Actions::Spawn(_)
+                    | Actions::TogglePreview
+                    | Actions::ToggleDecorations => self.process_common_key_action(action),
 
                     _ => unreachable!(),
                 },
@@ -1352,27 +1360,6 @@ impl YawcState<UdevData> {
     }
 }
 
-/// Possible results of a keyboard action
-#[allow(dead_code)] // some of these are only read if udev is enabled
-#[derive(Debug, PartialEq)]
-enum KeyAction {
-    Exit,
-    DestroyFocusedClient,
-    /// Trigger a vt-switch
-    VtSwitch(i32),
-    Exec(String),
-    /// Switch the current screen
-    Screen(usize),
-    ScaleUp,
-    ScaleDown,
-    TogglePreview,
-    RotateOutput,
-    ToggleTint,
-    ToggleDecorations,
-    /// Do nothing more
-    None,
-}
-
 fn canonicalize_keysym(sym: Keysym) -> Keysym {
     if let Some(ch) = sym.key_char()
         && let Some(lower) = ch.to_lowercase().next()
@@ -1383,26 +1370,48 @@ fn canonicalize_keysym(sym: Keysym) -> Keysym {
     sym
 }
 
-fn process_keyboard_shortcut(modifiers: ModifiersState, keysym: Keysym) -> KeyAction {
-    use KeyAction::*;
+fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
+    use yawc_config::binds::ModMask;
+
+    let mut mask = ModMask::empty();
+
+    if mods.shift {
+        mask |= ModMask::SHIFT;
+    }
+
+    if mods.ctrl {
+        mask |= ModMask::CTRL;
+    }
+
+    if mods.alt {
+        mask |= ModMask::ALT;
+    }
+
+    if mods.logo {
+        mask |= ModMask::SUPER;
+    }
+
+    mask
+}
+
+fn process_keyboard_shortcut(
+    modifiers: ModifiersState,
+    keysym: Keysym,
+) -> yawc_config::binds::Actions {
+    use yawc_config::binds::Actions;
 
     let sym = canonicalize_keysym(keysym);
+    let mods = modmask_from_state(modifiers);
 
-    match (modifiers.logo, modifiers.shift, sym) {
-        (true, false, Keysym::q) => DestroyFocusedClient,
-        (true, true, Keysym::q) => Exit,
-        (true, _, Keysym::Return) => Exec("alacritty".into()),
-        (true, true, Keysym::m) => ScaleDown,
-        (true, true, Keysym::p) => ScaleUp,
+    let config = yawc_config::Config::read_config();
 
-        _ if (xkb::KEY_XF86Switch_VT_1..=xkb::KEY_XF86Switch_VT_12).contains(&sym.raw()) => {
-            VtSwitch((sym.raw() - xkb::KEY_XF86Switch_VT_1 + 1) as i32)
+    for bind in &config.binds.binds {
+        if bind.key_register.sym == sym && bind.key_register.mods == mods {
+            if let Some(action) = bind.actions.first() {
+                return action.clone();
+            }
         }
-
-        _ if modifiers.logo && (xkb::KEY_1..=xkb::KEY_9).contains(&sym.raw()) => {
-            Screen((sym.raw() - xkb::KEY_1) as usize)
-        }
-
-        _ => None,
     }
+
+    Actions::None
 }

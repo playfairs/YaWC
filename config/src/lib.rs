@@ -14,7 +14,7 @@ use std::{
 
 static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 
-#[derive(knuffel::Decode, Debug, Default)]
+#[derive(knuffel::Decode, Debug)]
 pub struct RawConfig {
     #[knuffel(child, unwrap(argument))]
     pub version: Option<f64>,
@@ -24,7 +24,7 @@ pub struct RawConfig {
     pub binds: Option<Binds>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Config {
     pub version: f64,
     pub envs: Envs,
@@ -35,8 +35,8 @@ impl From<RawConfig> for Config {
     fn from(raw: RawConfig) -> Self {
         Self {
             version: raw.version.unwrap_or(-1.0),
-            envs: raw.envs.unwrap_or_default(),
-            binds: raw.binds.unwrap_or_default(),
+            envs: raw.envs.unwrap_or_else(|| Envs { vars: vec![] }),
+            binds: raw.binds.unwrap_or_else(|| Binds { binds: vec![] }),
         }
     }
 }
@@ -72,6 +72,8 @@ impl Config {
                 .unwrap(),
         )
         .expect("config parse failed");
+
+        tracing::info!("Config: {config:?}");
 
         match config.version {
             -1.0 => {

@@ -3418,8 +3418,10 @@ dependencies = [
 name = "yawc-config"
 version = "0.0.1"
 dependencies = [
+ "bitflags 2.11.0",
  "knuffel",
  "miette 7.6.0",
+ "smithay",
  "tracing",
 ]
 
