@@ -1394,6 +1394,21 @@ fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
     mask
 }
 
+// TODO + FIXME:
+// The keybinds will be interpolated to the median common
+// language which should be spoke, between them both
+// but the config, still speaks both ways with Q or q being
+// different.
+//
+// Test yourself with:
+// Mod+T { spawn "alacritty"; }
+// Mod+t { spawn "alacritty"; }
+//
+// Notice that Mod+T will not work, but Mod+t will work.
+// I dont know if Mod+Shift+T will be what executes for Mod+T,
+// but it's seems unlikely with the `cnonicalize_keysym` function
+// trying to remove that talk, and I would think it will remove that
+// talking ability.
 fn process_keyboard_shortcut(
     modifiers: ModifiersState,
     keysym: Keysym,
