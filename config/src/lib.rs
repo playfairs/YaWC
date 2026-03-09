@@ -56,7 +56,7 @@ fn parse_config(path_ref: impl AsRef<str>) -> miette::Result<Config> {
         .into_diagnostic()
         .wrap_err_with(|| format!("cannot read {:?}", path))?;
 
-    let raw_config: RawConfig = knuffel::parse(path, &text)
+    let raw_config = knuffel::parse::<RawConfig>(path, &text)
         .into_diagnostic()
         .wrap_err("failed to parse config")?;
 
