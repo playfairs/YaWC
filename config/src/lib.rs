@@ -83,9 +83,7 @@ impl Config {
             ),
         }
 
-        *CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config));
-
-        Ok(())
+        Ok(*CONFIG_INSTANCE.write().unwrap() = Some(Arc::new(config)))
     }
 
     /// Read `RwLock<Option<Arc<KdlDocument>>>` returning
