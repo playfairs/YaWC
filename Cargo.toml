@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3" # Rust 2024
-members = ["yawc_config", "yawc"]
+members = ["config", "yawc"]
 default-members = ["yawc"]
 
 [workspace.dependencies]
@@ -18,7 +18,7 @@ profiling = "1.0"
 knuffel = "3.2.0"
 
 [workspace.dependencies.yawc-config]
-path = "./yawc_config"
+path = "./config"
 
 [workspace.dependencies.image]
 version = "0.25.9"
