@@ -1405,6 +1405,8 @@ fn process_keyboard_shortcut(
 
     let config = yawc_config::Config::read_config();
 
+    println!("Mods: {mods:#?}\n Modifiers: {modifiers:#?}");
+
     for bind in &config.binds.binds {
         if bind.key_register.sym == sym && bind.key_register.mods == mods {
             if let Some(action) = bind.actions.first() {
