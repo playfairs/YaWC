@@ -1,11 +1,35 @@
+use core::ops::Deref;
 use core::str::FromStr;
 use smithay::input::keyboard::Keysym;
 use smithay::input::keyboard::xkb;
 
 #[derive(knuffel::Decode, Debug)]
-pub struct Binds {
-    #[knuffel(children)]
-    pub binds: Vec<Bind>,
+pub struct Binds(#[knuffel(children)] pub Vec<Bind>);
+
+impl Deref for Binds {
+    type Target = [Bind];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl IntoIterator for Binds {
+    type Item = Bind;
+    type IntoIter = std::vec::IntoIter<Bind>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Binds {
+    type Item = &'a Bind;
+    type IntoIter = std::slice::Iter<'a, Bind>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
 }
 
 #[derive(knuffel::Decode, Debug, PartialEq)]

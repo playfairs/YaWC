@@ -1422,7 +1422,7 @@ fn process_keyboard_shortcut(
 
     println!("Mods: {mods:#?}\n Modifiers: {modifiers:#?}");
 
-    for bind in &config.binds.binds {
+    for bind in &config.binds {
         if bind.key_register.sym == sym && bind.key_register.mods == mods {
             if let Some(action) = bind.actions.first() {
                 return action.clone();

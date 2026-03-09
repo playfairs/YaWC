@@ -248,7 +248,7 @@ pub fn run_udev() {
         // For all other env's set by someone in their config,
         // this will set them.
         // This includes being able to override the ones above.
-        for e in &Config::read_config().envs.vars {
+        for e in &Config::read_config().envs {
             std::env::set_var(e.name.clone(), e.value.clone());
         }
     }

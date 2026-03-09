@@ -35,8 +35,8 @@ impl From<RawConfig> for Config {
     fn from(raw: RawConfig) -> Self {
         Self {
             version: raw.version.unwrap_or(-1.0),
-            envs: raw.envs.unwrap_or_else(|| Envs { vars: vec![] }),
-            binds: raw.binds.unwrap_or_else(|| Binds { binds: vec![] }),
+            envs: raw.envs.unwrap_or_else(|| Envs(vec![])),
+            binds: raw.binds.unwrap_or_else(|| Binds(vec![])),
         }
     }
 }
