@@ -8,6 +8,18 @@ binds {
 	Mod+Return { spawn "alacritty"; }
 	Mod+Shift+m { scale-down; }
 	Mod+Shift+p { scale-up; }
+    Ctrl+Alt+F1 { vt-switch 1; }
+    Ctrl+Alt+F2 { vt-switch 2; }
+    Ctrl+Alt+F3 { vt-switch 3; }
+    Ctrl+Alt+F4 { vt-switch 4; }
+    Ctrl+Alt+F5 { vt-switch 5; }
+    Ctrl+Alt+F6 { vt-switch 6; }
+    Ctrl+Alt+F7 { vt-switch 7; }
+    Ctrl+Alt+F8 { vt-switch 8; }
+    Ctrl+Alt+F9 { vt-switch 9; }
+    Ctrl+Alt+F10 { vt-switch 10; }
+    Ctrl+Alt+F11 { vt-switch 11; }
+    Ctrl+Alt+F12 { vt-switch 12; }
 	Mod+1 { screen 1; }
 	Mod+2 { screen 2; }
 	Mod+3 { screen 3; }
