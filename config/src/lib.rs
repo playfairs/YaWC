@@ -45,6 +45,7 @@ impl From<RawConfig> for Config {
             xkb: Xkb::from(raw.xkb.unwrap_or_else(|| RawXkb {
                 layout: Some("us".into()),
                 variant: None,
+                options: None,
                 repeat_rate: Some("50".into()),
                 repeat_delay: Some("200".into()),
             })),

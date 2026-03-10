@@ -1417,10 +1417,7 @@ fn process_keyboard_shortcut(
 
     let sym = canonicalize_keysym(keysym);
     let mods = modmask_from_state(modifiers);
-
     let config = yawc_config::Config::read_config();
-
-    println!("Mods: {mods:#?}\n Modifiers: {modifiers:#?}");
 
     for bind in &config.binds {
         if bind.key_register.sym == sym && bind.key_register.mods == mods {

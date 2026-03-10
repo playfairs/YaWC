@@ -778,7 +778,12 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
 
         let config = yawc_config::Config::read_config();
         seat.add_keyboard(
-            XkbConfig::default(),
+            XkbConfig {
+                layout: &config.xkb.layout,
+                variant: &config.xkb.variant,
+                options: config.xkb.options.clone(),
+                ..Default::default()
+            },
             config.xkb.repeat_delay,
             config.xkb.repeat_rate,
         )
