@@ -119,6 +119,36 @@ use smithay::{
     },
 };
 
+// #region agent log
+fn agent_debug_log(hypothesis_id: &'static str, location: &'static str, message: &'static str, data: &str) {
+    use std::io::Write as _;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static SEQ: AtomicU64 = AtomicU64::new(0);
+    let seq = SEQ.fetch_add(1, Ordering::Relaxed);
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/home/invra/dev/10-rs/yawc-epoch/.cursor/debug.log")
+    {
+        let _ = writeln!(
+            f,
+            r#"{{"id":"yawc_{}_{}","timestamp":{},"location":"{}","message":"{}","data":{},"runId":"pre-fix","hypothesisId":"{}"}}"#,
+            std::process::id(),
+            seq,
+            timestamp,
+            location,
+            message,
+            data,
+            hypothesis_id
+        );
+    }
+}
+// #endregion
+
 #[cfg(feature = "xwayland")]
 use {
     crate::cursor::Cursor,
@@ -657,6 +687,18 @@ impl<BackendData: Backend> ImageCopyCaptureHandler for YawcState<BackendData> {
         let output = weak_output.upgrade()?;
         let mode = output.current_mode()?;
 
+        // #region agent log
+        agent_debug_log(
+            "B",
+            "compositor/yawc/src/state.rs:capture_constraints",
+            "capture_constraints called",
+            &format!(
+                r#"{{"modeSize":{{"w":{},"h":{}}},"shmFormats":["Argb8888","Xrgb8888"],"dma":null}}"#,
+                mode.size.w, mode.size.h
+            ),
+        );
+        // #endregion
+
         Some(BufferConstraints {
             size: mode
                 .size
@@ -677,6 +719,14 @@ impl<BackendData: Backend> ImageCopyCaptureHandler for YawcState<BackendData> {
 
     fn frame(&mut self, _session: &SessionRef, frame: Frame) {
         // Anvil doesn't implement actual capture
+        // #region agent log
+        agent_debug_log(
+            "B",
+            "compositor/yawc/src/state.rs:frame",
+            "frame requested -> failing (current behavior)",
+            r#"{"failureReason":"Unknown"}"#,
+        );
+        // #endregion
         frame.fail(smithay::wayland::image_copy_capture::CaptureFailureReason::Unknown);
     }
 }
