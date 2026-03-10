@@ -10,7 +10,7 @@ use crate::{
 };
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 use smithay::backend::{allocator::Fourcc, renderer::ImportMem};
 
 use smithay::{
@@ -67,7 +67,7 @@ pub struct X11Data {
     dmabuf_state: DmabufState,
     _dmabuf_global: DmabufGlobal,
     _dmabuf_default_feedback: DmabufFeedback,
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     fps: Fps,
 }
 
@@ -221,7 +221,7 @@ pub fn run_x11() {
         refresh: 60_000,
     };
 
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     let fps_texture = {
         use png::{Decoder, Transformations};
         use std::io::Cursor;
@@ -246,7 +246,7 @@ pub fn run_x11() {
             .expect("Unable to upload FPS texture")
     };
 
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     let mut fps_element = FpsElement::new(fps_texture);
 
     let output = Output::new(
@@ -274,7 +274,7 @@ pub fn run_x11() {
         dmabuf_state,
         _dmabuf_global: dmabuf_global,
         _dmabuf_default_feedback: dmabuf_default_feedback,
-        #[cfg(feature = "debug")]
+        #[cfg(debug_assertions)]
         fps: Fps::default(),
     };
 
@@ -338,9 +338,9 @@ pub fn run_x11() {
 
             let backend_data = &mut state.backend_data;
             // We need to borrow everything we want to refer to inside the renderer callback otherwise rustc is unhappy.
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             let fps = backend_data.fps.avg().round() as u32;
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             fps_element.update_fps(fps);
 
             let (mut buffer, age) = backend_data
@@ -356,7 +356,7 @@ pub fn run_x11() {
                 }
             };
 
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             if let Some(renderdoc) = state.renderdoc.as_mut() {
                 renderdoc.start_frame_capture(
                     backend_data.renderer.egl_context().get_context_handle(),
@@ -422,7 +422,7 @@ pub fn run_x11() {
                 }
             }
 
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             elements.push(CustomRenderElements::Fps(fps_element.clone()));
 
             let render_res = render_output(
@@ -448,7 +448,7 @@ pub fn run_x11() {
                     };
 
                     let states = render_output_result.states;
-                    #[cfg(feature = "debug")]
+                    #[cfg(debug_assertions)]
                     let rendered = render_output_result.damage.is_some();
                     if render_output_result.damage.is_some() {
                         let mut output_presentation_feedback =
@@ -468,7 +468,7 @@ pub fn run_x11() {
                         )
                     }
 
-                    #[cfg(feature = "debug")]
+                    #[cfg(debug_assertions)]
                     if rendered {
                         if let Some(renderdoc) = state.renderdoc.as_mut() {
                             renderdoc.end_frame_capture(
@@ -497,7 +497,7 @@ pub fn run_x11() {
                     state.post_repaint(&output, frame_target, None, &states);
                 }
                 Err(err) => {
-                    #[cfg(feature = "debug")]
+                    #[cfg(debug_assertions)]
                     if let Some(renderdoc) = state.renderdoc.as_mut() {
                         renderdoc.discard_frame_capture(
                             backend_data.renderer.egl_context().get_context_handle(),
@@ -511,7 +511,7 @@ pub fn run_x11() {
                 }
             }
 
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             state.backend_data.fps.tick();
             window.set_cursor_visible(cursor_visible);
             profiling::finish_frame!();

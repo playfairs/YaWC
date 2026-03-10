@@ -13,7 +13,7 @@ use smithay::{
     render_elements,
     utils::{Physical, Point, Scale},
 };
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 use smithay::{
     backend::renderer::{
         Frame,
@@ -121,10 +121,10 @@ where
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 pub static FPS_NUMBERS_PNG: &[u8] = include_bytes!("../../resources/numbers.png");
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 #[derive(Debug, Clone)]
 pub struct FpsElement<T: Texture> {
     id: Id,
@@ -133,7 +133,7 @@ pub struct FpsElement<T: Texture> {
     commit_counter: CommitCounter,
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 impl<T: Texture> FpsElement<T> {
     pub fn new(texture: T) -> Self {
         FpsElement {
@@ -152,7 +152,7 @@ impl<T: Texture> FpsElement<T> {
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 impl<T> Element for FpsElement<T>
 where
     T: Texture + 'static,
@@ -192,7 +192,7 @@ where
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 impl<R> RenderElement<R> for FpsElement<R::TextureId>
 where
     R: Renderer + ImportAll,
@@ -260,18 +260,23 @@ where
     }
 }
 
-use std::cell::RefCell;
-use std::collections::VecDeque;
-use std::time::{Duration, Instant};
+#[cfg(debug_assertions)]
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    time::{Duration, Instant},
+};
 
 /// Tracking frames-per-second.
 #[derive(Clone, Debug)]
+#[cfg(debug_assertions)]
 pub struct Fps {
     window_len: usize,
     inner: RefCell<Inner>,
 }
 
 #[derive(Clone, Debug)]
+#[cfg(debug_assertions)]
 struct Inner {
     window: VecDeque<Duration>,
     last: Instant,
@@ -280,6 +285,7 @@ struct Inner {
     max: f64,
 }
 
+#[cfg(debug_assertions)]
 impl Fps {
     /// The window length used by the default constructor.
     pub const DEFAULT_WINDOW_LEN: usize = 60;
@@ -334,6 +340,7 @@ impl Fps {
     }
 }
 
+#[cfg(debug_assertions)]
 impl Inner {
     /// Calculate the frames per second from the current state of the window.
     fn calc_avg(&self) -> f64 {
@@ -362,6 +369,7 @@ impl Inner {
     }
 }
 
+#[cfg(debug_assertions)]
 impl Default for Fps {
     fn default() -> Self {
         Fps::with_window_len(Self::DEFAULT_WINDOW_LEN)

@@ -10,19 +10,15 @@ bitflags.workspace = true
 tracing.workspace = true
 smithay.workspace = true
 
-[dependencies.png]
-workspace = true
-optional = true
+[target.'cfg(debug_assertions)'.dependencies]
+renderdoc.workspace = true
+png.workspace = true
 
 [dependencies.xcursor]
 workspace = true
 optional = true
 
 [dependencies.smithay-drm-extras]
-workspace = true
-optional = true
-
-[dependencies.renderdoc]
 workspace = true
 optional = true
 
@@ -35,10 +31,8 @@ readme = "../README.org"
 edition = "2024"
 
 [features]
-debug = ["png", "renderdoc"]
 default = ["egl", "winit", "x11", "udev", "xwayland"]
 egl = ["smithay/use_system_lib", "smithay/backend_egl"]
-test_all_features = ["default", "debug"]
 udev = [
   "smithay-drm-extras",
   "smithay/backend_libinput",
@@ -48,7 +42,6 @@ udev = [
   "smithay/backend_vulkan",
   "smithay/backend_egl",
   "smithay/backend_session_libseat",
-  "png",
   "smithay/renderer_gl",
   "smithay/renderer_pixman",
   "smithay/renderer_multi",
@@ -58,5 +51,4 @@ winit = ["smithay/backend_winit", "smithay/backend_drm"]
 x11 = ["smithay/backend_x11", "smithay/renderer_gl", "smithay/backend_vulkan"]
 xwayland = ["smithay/xwayland", "smithay/x11rb_event_source", "xcursor"]
 profile-with-tracy = ["profiling/profile-with-tracy"]
-profile-with-tracy-mem = ["profile-with-tracy"]
 renderer_sync = []

@@ -202,7 +202,7 @@ pub struct YawcState<BackendData: Backend + 'static> {
     #[cfg(feature = "xwayland")]
     pub xdisplay: Option<u32>,
 
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     pub renderdoc: Option<renderdoc::RenderDoc<renderdoc::V141>>,
 
     pub show_window_preview: bool,
@@ -841,7 +841,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
             xwm: None,
             #[cfg(feature = "xwayland")]
             xdisplay: None,
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             renderdoc: renderdoc::RenderDoc::new().ok(),
             show_window_preview: false,
         }

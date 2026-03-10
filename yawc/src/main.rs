@@ -17,7 +17,7 @@ pub mod state;
 
 pub use state::{ClientState, YawcState};
 
-#[cfg(feature = "profile-with-tracy-mem")]
+#[cfg(feature = "profile-with-tracy")]
 #[global_allocator]
 static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
     profiling::tracy_client::ProfiledAllocator::new(std::alloc::System, 10);
