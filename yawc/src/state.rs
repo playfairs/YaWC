@@ -120,7 +120,12 @@ use smithay::{
 };
 
 // #region agent log
-fn agent_debug_log(hypothesis_id: &'static str, location: &'static str, message: &'static str, data: &str) {
+fn agent_debug_log(
+    hypothesis_id: &'static str,
+    location: &'static str,
+    message: &'static str,
+    data: &str,
+) {
     use std::io::Write as _;
     use std::sync::atomic::{AtomicU64, Ordering};
     static SEQ: AtomicU64 = AtomicU64::new(0);

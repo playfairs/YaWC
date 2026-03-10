@@ -22,10 +22,6 @@ path = "./config"
 version = "0.1.44"
 features = ["max_level_trace", "release_max_level_debug"]
 
-[workspace.dependencies.tracing-subscriber]
-version = "0.3.22"
-features = ["env-filter"]
-
 [workspace.dependencies.smithay-drm-extras]
 git = "https://github.com/Smithay/smithay"
 

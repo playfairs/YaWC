@@ -2,7 +2,6 @@
 gl_generator.workspace = true
 
 [dependencies]
-tracing-subscriber.workspace = true
 yawc-config.workspace = true
 thiserror.workspace = true
 xkbcommon.workspace = true

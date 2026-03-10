@@ -9,6 +9,8 @@ pub mod cursor;
 pub mod drawing;
 pub mod focus;
 pub mod input_handler;
+pub mod logging;
+
 pub mod render;
 pub mod shell;
 pub mod state;
@@ -23,15 +25,7 @@ static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
 use yawc_config::Config;
 
 fn main() {
-    if let Ok(env_filter) = tracing_subscriber::EnvFilter::try_from_default_env() {
-        tracing_subscriber::fmt()
-            .compact()
-            .with_env_filter(env_filter)
-            .init();
-    } else {
-        tracing_subscriber::fmt().compact().init();
-    }
-
+    tracing::subscriber::set_global_default(logging::SimpleSubscriber).unwrap();
     let mut args = std::env::args().skip(1);
     let mut unknown = Vec::new();
 
