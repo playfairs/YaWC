@@ -59,7 +59,7 @@ pub struct WinitData {
     dmabuf_state: (DmabufState, DmabufGlobal, Option<DmabufFeedback>),
     full_redraw: u8,
     #[cfg(feature = "debug")]
-    pub fps: fps_ticker::Fps,
+    pub fps: Fps,
 }
 
 impl DmabufHandler for YawcState<WinitData> {
@@ -223,7 +223,7 @@ pub fn run_winit() {
             dmabuf_state,
             full_redraw: 0,
             #[cfg(feature = "debug")]
-            fps: fps_ticker::Fps::default(),
+            fps: Fps::default(),
         }
     };
     let mut state = YawcState::init(display, event_loop.handle(), data, true);

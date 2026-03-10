@@ -708,7 +708,7 @@ struct SurfaceData {
     >,
     disable_direct_scanout: bool,
     #[cfg(feature = "debug")]
-    fps: fps_ticker::Fps,
+    fps: Fps,
     #[cfg(feature = "debug")]
     fps_element: Option<FpsElement<MultiTexture>>,
     dmabuf_feedback: Option<SurfaceDmabufFeedback>,
@@ -1152,7 +1152,7 @@ impl YawcState<UdevData> {
                 drm_output,
                 disable_direct_scanout,
                 #[cfg(feature = "debug")]
-                fps: fps_ticker::Fps::default(),
+                fps: Fps::default(),
                 #[cfg(feature = "debug")]
                 fps_element,
                 dmabuf_feedback,

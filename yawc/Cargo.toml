@@ -10,10 +10,6 @@ bitflags.workspace = true
 tracing.workspace = true
 smithay.workspace = true
 
-[dependencies.fps_ticker]
-workspace = true
-optional = true
-
 [dependencies.png]
 workspace = true
 optional = true
@@ -44,7 +40,7 @@ readme = "../README.org"
 edition = "2024"
 
 [features]
-debug = ["fps_ticker", "png", "renderdoc"]
+debug = ["png", "renderdoc"]
 default = ["egl", "winit", "x11", "udev", "xwayland"]
 egl = ["smithay/use_system_lib", "smithay/backend_egl"]
 test_all_features = ["default", "debug"]

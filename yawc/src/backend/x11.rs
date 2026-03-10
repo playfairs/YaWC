@@ -68,7 +68,7 @@ pub struct X11Data {
     _dmabuf_global: DmabufGlobal,
     _dmabuf_default_feedback: DmabufFeedback,
     #[cfg(feature = "debug")]
-    fps: fps_ticker::Fps,
+    fps: Fps,
 }
 
 impl DmabufHandler for YawcState<X11Data> {
@@ -275,7 +275,7 @@ pub fn run_x11() {
         _dmabuf_global: dmabuf_global,
         _dmabuf_default_feedback: dmabuf_default_feedback,
         #[cfg(feature = "debug")]
-        fps: fps_ticker::Fps::default(),
+        fps: Fps::default(),
     };
 
     let mut state = YawcState::init(display, event_loop.handle(), data, true);
