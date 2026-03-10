@@ -28,8 +28,3 @@ git = "https://github.com/Smithay/smithay"
 default-features = false
 git = "https://github.com/Smithay/smithay.git"
 features = ["desktop", "wayland_frontend"]
-
-[workspace.dependencies.x11rb]
-default-features = false
-features = ["composite"]
-version = "0.13.2"

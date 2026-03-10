@@ -3015,7 +3015,6 @@ dependencies = [
  "smithay-drm-extras",
  "thiserror 2.0.18",
  "tracing",
- "x11rb",
  "xcursor",
  "xkbcommon",
  "yawc-config",

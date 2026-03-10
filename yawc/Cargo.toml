@@ -26,11 +26,6 @@ optional = true
 workspace = true
 optional = true
 
-[dependencies.x11rb]
-workspace = true
-optional = true
-
-
 [package]
 name = "yawc"
 version = "0.0.1"
@@ -60,8 +55,8 @@ udev = [
   "xcursor"
 ]
 winit = ["smithay/backend_winit", "smithay/backend_drm"]
-x11 = ["smithay/backend_x11", "x11rb", "smithay/renderer_gl", "smithay/backend_vulkan"]
-xwayland = ["smithay/xwayland", "x11rb", "smithay/x11rb_event_source", "xcursor"]
+x11 = ["smithay/backend_x11", "smithay/renderer_gl", "smithay/backend_vulkan"]
+xwayland = ["smithay/xwayland", "smithay/x11rb_event_source", "xcursor"]
 profile-with-tracy = ["profiling/profile-with-tracy"]
 profile-with-tracy-mem = ["profile-with-tracy"]
 renderer_sync = []
