@@ -19,7 +19,7 @@ static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 #[derive(knuffel::Decode, Debug)]
 pub struct RawConfig {
     #[knuffel(child, unwrap(argument))]
-    pub version: Option<f64>,
+    pub version: Option<String>,
     #[knuffel(child)]
     pub envs: Option<Envs>,
     #[knuffel(child)]
@@ -30,7 +30,7 @@ pub struct RawConfig {
 
 #[derive(Debug)]
 pub struct Config {
-    pub version: f64,
+    pub version: i16,
     pub envs: Envs,
     pub binds: Binds,
     pub xkb: Xkb,
@@ -39,7 +39,11 @@ pub struct Config {
 impl From<RawConfig> for Config {
     fn from(raw: RawConfig) -> Self {
         Self {
-            version: raw.version.unwrap_or(-1.0),
+            version: raw
+                .version
+                .unwrap_or_else(|| "-1".into())
+                .parse::<i16>()
+                .expect("version is meant to represent a i16 value"),
             envs: raw.envs.unwrap_or_else(|| Envs(vec![])),
             binds: raw.binds.unwrap_or_else(|| Binds(vec![])),
             xkb: Xkb::from(raw.xkb.unwrap_or_else(|| RawXkb {
@@ -87,10 +91,10 @@ impl Config {
         tracing::info!("Config: {config:?}");
 
         match config.version {
-            -1.0 => {
+            -1 => {
                 tracing::warn!("Configuration version is unset! Defaulting to v1 specification")
             }
-            1.0 => {} // Config verison value is Ok.
+            1 => {} // Config verison value is Ok.
             _ => tracing::warn!(
                 "Configuration version is set to an unknown value! Defaulting to v1 specification"
             ),
