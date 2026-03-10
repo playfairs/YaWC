@@ -16,15 +16,15 @@ use xkb::*;
 
 static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 
-#[derive(knuffel::Decode, Debug)]
+#[derive(knus::Decode, Debug)]
 pub struct RawConfig {
-    #[knuffel(child, unwrap(argument))]
+    #[knus(child, unwrap(argument))]
     pub version: Option<String>,
-    #[knuffel(child)]
+    #[knus(child)]
     pub envs: Option<Envs>,
-    #[knuffel(child)]
+    #[knus(child)]
     pub binds: Option<Binds>,
-    #[knuffel(child)]
+    #[knus(child)]
     pub xkb: Option<RawXkb>,
 }
 
@@ -70,9 +70,7 @@ fn parse_config(path_ref: impl AsRef<str>) -> Result<Config, ()> {
     let path: &str = path_ref.as_ref();
 
     if let Ok(text) = read_to_string(path) {
-        return Ok(Config::from(
-            knuffel::parse::<RawConfig>(path, &text).unwrap(),
-        ));
+        return Ok(Config::from(knus::parse::<RawConfig>(path, &text).unwrap()));
     } else {
         return Err(());
     };

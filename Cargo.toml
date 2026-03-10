@@ -10,8 +10,8 @@ thiserror = "2.0.18"
 xkbcommon = "0.9.0"
 bitflags = "2.11.0"
 xcursor = "0.3.10"
-profiling = "1.0"
-knuffel = "3.2.0"
+profiling = "1.0.17"
+knus = "3.2.0"
 png = "0.18.1"
 
 [workspace.dependencies.yawc-config]
