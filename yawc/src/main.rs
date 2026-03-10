@@ -3,6 +3,7 @@
     allow(dead_code, unused_imports)
 )]
 
+pub mod backend;
 #[cfg(any(feature = "udev", feature = "xwayland"))]
 pub mod cursor;
 pub mod drawing;
@@ -11,12 +12,6 @@ pub mod input_handler;
 pub mod render;
 pub mod shell;
 pub mod state;
-#[cfg(feature = "udev")]
-pub mod udev;
-#[cfg(feature = "winit")]
-pub mod winit;
-#[cfg(feature = "x11")]
-pub mod x11;
 
 pub use state::{ClientState, YawcState};
 
@@ -28,7 +23,12 @@ static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
 use yawc_config::Config;
 
 // #region agent log
-fn agent_debug_log(hypothesis_id: &'static str, location: &'static str, message: &'static str, data: &str) {
+fn agent_debug_log(
+    hypothesis_id: &'static str,
+    location: &'static str,
+    message: &'static str,
+    data: &str,
+) {
     use std::io::Write as _;
     use std::sync::atomic::{AtomicU64, Ordering};
     static SEQ: AtomicU64 = AtomicU64::new(0);
@@ -111,20 +111,26 @@ fn main() {
             r#"{{"WAYLAND_DISPLAY":{},"DISPLAY":{},"XDG_CURRENT_DESKTOP":{},"XDG_SESSION_TYPE":{}}}"#,
             std::env::var("WAYLAND_DISPLAY").is_ok(),
             std::env::var("DISPLAY").is_ok(),
-            std::env::var("XDG_CURRENT_DESKTOP").ok().map(|_| true).unwrap_or(false),
-            std::env::var("XDG_SESSION_TYPE").ok().map(|_| true).unwrap_or(false)
+            std::env::var("XDG_CURRENT_DESKTOP")
+                .ok()
+                .map(|_| true)
+                .unwrap_or(false),
+            std::env::var("XDG_SESSION_TYPE")
+                .ok()
+                .map(|_| true)
+                .unwrap_or(false)
         ),
     );
     // #endregion
 
     if std::env::var("WAYLAND_DISPLAY").is_ok() {
         tracing::info!("Starting yawc with winit backend");
-        winit::run_winit();
+        backend::winit::run_winit();
     } else if std::env::var("DISPLAY").is_ok() {
         tracing::info!("Starting yawc with x11 backend");
-        x11::run_x11();
+        backend::x11::run_x11();
     } else {
         tracing::info!("Starting yawc on a tty using udev");
-        udev::run_udev();
+        backend::udev::run_udev();
     }
 }

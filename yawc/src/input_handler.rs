@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[cfg(feature = "udev")]
-use crate::udev::UdevData;
+use crate::backend::udev::UdevData;
 #[cfg(feature = "udev")]
 use smithay::backend::renderer::DebugFlags;
 
