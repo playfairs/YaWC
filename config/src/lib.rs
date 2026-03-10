@@ -1,5 +1,6 @@
 pub mod binds;
 pub mod envs;
+pub mod xkb;
 
 use binds::*;
 use core::{convert::From, include_str, option::Option::None};
@@ -11,6 +12,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
+use xkb::*;
 
 static CONFIG_INSTANCE: RwLock<Option<Arc<Config>>> = RwLock::new(None);
 
@@ -22,6 +24,8 @@ pub struct RawConfig {
     pub envs: Option<Envs>,
     #[knuffel(child)]
     pub binds: Option<Binds>,
+    #[knuffel(child)]
+    pub xkb: Option<RawXkb>,
 }
 
 #[derive(Debug)]
@@ -29,6 +33,7 @@ pub struct Config {
     pub version: f64,
     pub envs: Envs,
     pub binds: Binds,
+    pub xkb: Xkb,
 }
 
 impl From<RawConfig> for Config {
@@ -37,6 +42,12 @@ impl From<RawConfig> for Config {
             version: raw.version.unwrap_or(-1.0),
             envs: raw.envs.unwrap_or_else(|| Envs(vec![])),
             binds: raw.binds.unwrap_or_else(|| Binds(vec![])),
+            xkb: Xkb::from(raw.xkb.unwrap_or_else(|| RawXkb {
+                layout: Some("us".into()),
+                variant: None,
+                repeat_rate: Some("50".into()),
+                repeat_delay: Some("200".into()),
+            })),
         }
     }
 }

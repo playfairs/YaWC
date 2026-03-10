@@ -1,12 +1,12 @@
 #[cfg(feature = "xwayland")]
 use std::os::unix::io::OwnedFd;
 
-use tracing::{info, warn};
 use std::{
     collections::HashMap,
     sync::{Arc, atomic::AtomicBool},
     time::Duration,
 };
+use tracing::{info, warn};
 
 use smithay::{
     backend::{
@@ -775,8 +775,14 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
         let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
 
         let pointer = seat.add_pointer();
-        seat.add_keyboard(XkbConfig::default(), 200, 50)
-            .expect("Failed to initialize the keyboard");
+
+        let config = yawc_config::Config::read_config();
+        seat.add_keyboard(
+            XkbConfig::default(),
+            config.xkb.repeat_delay,
+            config.xkb.repeat_rate,
+        )
+        .expect("Failed to initialize the keyboard");
 
         let keyboard_shortcuts_inhibit_state = KeyboardShortcutsInhibitState::new::<Self>(&dh);
 
@@ -891,10 +897,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
                 }
             });
         if let Err(e) = ret {
-            tracing::error!(
-                "Failed to insert the XWaylandSource into the event loop: {}",
-                e
-            );
+            tracing::error!("Failed to insert the XWaylandSource into the event loop: {e}",);
         }
     }
 }
