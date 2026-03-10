@@ -7,7 +7,6 @@ yawc-config.workspace = true
 thiserror.workspace = true
 xkbcommon.workspace = true
 profiling.workspace = true
-getrandom.workspace = true
 bitflags.workspace = true
 tracing.workspace = true
 smithay.workspace = true

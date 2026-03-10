@@ -1,4 +1,5 @@
-use std::cell::RefCell;
+use std::io::Read;
+use std::{cell::RefCell, fs::File};
 
 #[cfg(feature = "xwayland")]
 use smithay::xwayland::XWaylandClientData;
@@ -402,9 +403,10 @@ fn ensure_initial_configure(
     };
 }
 
-fn get_random_u32() -> Result<u32, getrandom::Error> {
+fn get_random_u32() -> std::io::Result<u32> {
+    let mut file = File::open("/dev/urandom")?;
     let mut buf = [0u8; 4];
-    getrandom::fill(&mut buf)?;
+    file.read_exact(&mut buf)?;
     Ok(u32::from_ne_bytes(buf))
 }
 

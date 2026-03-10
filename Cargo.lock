@@ -3167,7 +3167,6 @@ version = "0.0.1"
 dependencies = [
  "bitflags 2.11.0",
  "fps_ticker",
- "getrandom 0.4.2",
  "gl_generator",
  "image",
  "profiling",
