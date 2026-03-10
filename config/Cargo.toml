@@ -3,7 +3,6 @@ bitflags.workspace = true
 smithay.workspace = true
 tracing.workspace = true
 knuffel.workspace = true
-miette.workspace = true
 
 [package]
 name = "yawc-config"

@@ -3,11 +3,11 @@ pub mod envs;
 pub mod xkb;
 
 use binds::*;
-use core::{convert::From, include_str, option::Option::None};
+use core::{convert::From, include_str, option::Option::None, result::Result::Err};
 use envs::*;
-use miette::{Context, IntoDiagnostic};
 use std::{
-    env, fs,
+    env,
+    fs::{self, read_to_string},
     io::{self, Write},
     path::PathBuf,
     sync::{Arc, RwLock},
@@ -62,21 +62,20 @@ fn get_config_instance() -> PathBuf {
     }
 }
 
-fn parse_config(path_ref: impl AsRef<str>) -> miette::Result<Config> {
+fn parse_config(path_ref: impl AsRef<str>) -> Result<Config, ()> {
     let path: &str = path_ref.as_ref();
-    let text = fs::read_to_string(path)
-        .into_diagnostic()
-        .wrap_err_with(|| format!("cannot read {:?}", path))?;
 
-    let raw_config = knuffel::parse::<RawConfig>(path, &text)
-        .into_diagnostic()
-        .wrap_err("failed to parse config")?;
-
-    Ok(Config::from(raw_config))
+    if let Ok(text) = read_to_string(path) {
+        return Ok(Config::from(
+            knuffel::parse::<RawConfig>(path, &text).unwrap(),
+        ));
+    } else {
+        return Err(());
+    };
 }
 
 impl Config {
-    pub fn init_config_instance() -> miette::Result<()> {
+    pub fn init_config_instance() -> Result<(), ()> {
         let config = parse_config(
             get_config_instance()
                 .into_os_string()

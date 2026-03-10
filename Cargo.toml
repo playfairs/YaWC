@@ -35,10 +35,6 @@ features = ["env-filter"]
 [workspace.dependencies.smithay-drm-extras]
 git = "https://github.com/Smithay/smithay"
 
-[workspace.dependencies.miette]
-version = "7.6.0"
-features=["fancy"]
-
 [workspace.dependencies.smithay]
 default-features = false
 git = "https://github.com/Smithay/smithay.git"
