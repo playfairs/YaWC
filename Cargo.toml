@@ -5,7 +5,6 @@ default-members = ["yawc"]
 
 [workspace.dependencies]
 gl_generator = "0.14.0"
-puffin_http = "0.16.1"
 renderdoc = "0.12.1"
 fps_ticker = "1.0.0"
 thiserror = "2.0.18"
