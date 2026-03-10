@@ -37,18 +37,26 @@ fn main() {
         tracing_subscriber::fmt().compact().init();
     }
 
-    let mut pargs = pico_args::Arguments::from_env();
+    let mut args = std::env::args().skip(1);
+    let mut unknown = Vec::new();
 
-    if pargs.contains(["-V", "--version"]) {
-        println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
-        return;
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-V" | "--version" => {
+                println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+                return;
+            }
+            _ => unknown.push(arg),
+        }
     }
 
-    let remaining = pargs.finish();
-    if !remaining.clone().is_empty() {
-        eprintln!("Unknown arguments: {remaining:?}");
+    if !unknown.is_empty() {
+        eprintln!("Unknown arguments: {unknown:?}");
         std::process::exit(2);
     }
+
+    drop(args);
+    drop(unknown);
 
     #[cfg(feature = "profile-with-tracy")]
     profiling::tracy_client::Client::start();
