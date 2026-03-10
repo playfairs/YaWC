@@ -122,7 +122,7 @@ where
 }
 
 #[cfg(feature = "debug")]
-pub static FPS_NUMBERS_PNG: &[u8] = include_bytes!("../resources/numbers.png");
+pub static FPS_NUMBERS_PNG: &[u8] = include_bytes!("../../resources/numbers.png");
 
 #[cfg(feature = "debug")]
 #[derive(Debug, Clone)]

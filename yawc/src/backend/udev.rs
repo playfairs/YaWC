@@ -460,18 +460,27 @@ pub fn run_udev() {
 
     #[cfg(feature = "debug")]
     {
-        #[allow(deprecated)]
-        let fps_image = image::io::Reader::with_format(
-            std::io::Cursor::new(FPS_NUMBERS_PNG),
-            image::ImageFormat::Png,
-        )
-        .decode()
-        .unwrap();
+        use png::Decoder;
+        use std::io::Cursor;
+
+        let decoder = Decoder::new(Cursor::new(FPS_NUMBERS_PNG));
+        let mut reader = decoder.read_info().unwrap();
+
+        let mut buf = vec![
+            0;
+            reader
+                .output_buffer_size()
+                .expect("png buffer size unknown")
+        ];
+        let info = reader.next_frame(&mut buf).unwrap();
+
+        let pixels = &buf[..info.buffer_size()];
+
         let fps_texture = renderer
             .import_memory(
-                &fps_image.to_rgba8(),
+                pixels,
                 Fourcc::Abgr8888,
-                (fps_image.width() as i32, fps_image.height() as i32).into(),
+                (info.width as i32, info.height as i32).into(),
                 false,
             )
             .expect("Unable to upload FPS texture");
@@ -481,6 +490,7 @@ pub fn run_udev() {
                 surface.fps_element = Some(FpsElement::new(fps_texture.clone()));
             }
         }
+
         state.backend_data.fps_texture = Some(fps_texture);
     }
 

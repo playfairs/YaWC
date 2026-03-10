@@ -15,7 +15,7 @@ smithay.workspace = true
 workspace = true
 optional = true
 
-[dependencies.image]
+[dependencies.png]
 workspace = true
 optional = true
 
@@ -45,7 +45,7 @@ readme = "../README.org"
 edition = "2024"
 
 [features]
-debug = ["fps_ticker", "image/png", "renderdoc"]
+debug = ["fps_ticker", "png", "renderdoc"]
 default = ["egl", "winit", "x11", "udev", "xwayland"]
 egl = ["smithay/use_system_lib", "smithay/backend_egl"]
 test_all_features = ["default", "debug"]
@@ -58,7 +58,7 @@ udev = [
   "smithay/backend_vulkan",
   "smithay/backend_egl",
   "smithay/backend_session_libseat",
-  "image",
+  "png",
   "smithay/renderer_gl",
   "smithay/renderer_pixman",
   "smithay/renderer_multi",

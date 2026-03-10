@@ -222,24 +222,33 @@ pub fn run_x11() {
     };
 
     #[cfg(feature = "debug")]
-    #[allow(deprecated)]
-    let fps_image = image::io::Reader::with_format(
-        std::io::Cursor::new(FPS_NUMBERS_PNG),
-        image::ImageFormat::Png,
-    )
-    .decode()
-    .unwrap();
-    #[cfg(feature = "debug")]
-    let fps_texture = renderer
-        .import_memory(
-            &fps_image.to_rgba8(),
-            Fourcc::Abgr8888,
-            (fps_image.width() as i32, fps_image.height() as i32).into(),
-            false,
-        )
-        .expect("Unable to upload FPS texture");
+    let fps_texture = {
+        use png::{Decoder, Transformations};
+        use std::io::Cursor;
+
+        let mut decoder = Decoder::new(Cursor::new(FPS_NUMBERS_PNG));
+        decoder.set_transformations(Transformations::EXPAND);
+
+        let mut reader = decoder.read_info().unwrap();
+
+        let mut buf = vec![0; reader.output_buffer_size().unwrap()];
+        let info = reader.next_frame(&mut buf).unwrap();
+
+        let pixels = &buf[..info.buffer_size()];
+
+        renderer
+            .import_memory(
+                pixels,
+                Fourcc::Abgr8888,
+                (info.width as i32, info.height as i32).into(),
+                false,
+            )
+            .expect("Unable to upload FPS texture")
+    };
+
     #[cfg(feature = "debug")]
     let mut fps_element = FpsElement::new(fps_texture);
+
     let output = Output::new(
         OUTPUT_NAME.to_string(),
         PhysicalProperties {

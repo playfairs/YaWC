@@ -13,14 +13,10 @@ bitflags = "2.11.0"
 xcursor = "0.3.10"
 profiling = "1.0"
 knuffel = "3.2.0"
+png = "0.18.1"
 
 [workspace.dependencies.yawc-config]
 path = "./config"
-
-[workspace.dependencies.image]
-default-features = false
-version = "0.25.9"
-features = ["png"]
 
 [workspace.dependencies.tracing]
 version = "0.1.44"
