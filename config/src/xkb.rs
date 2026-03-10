@@ -29,12 +29,12 @@ impl From<RawXkb> for Xkb {
             options: raw.options,
             repeat_rate: raw
                 .repeat_rate
-                .unwrap_or_else(|| "200".into())
+                .unwrap_or_else(|| "50".into())
                 .parse::<i32>()
                 .expect("repeat_rate is meant to represent an i32"),
             repeat_delay: raw
                 .repeat_delay
-                .unwrap_or_else(|| "50".into())
+                .unwrap_or_else(|| "200".into())
                 .parse::<i32>()
                 .expect("repeat_delay is meant to represent an i32"),
         }
