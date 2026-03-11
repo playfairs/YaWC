@@ -22,6 +22,7 @@ pub use state::{ClientState, YawcState};
 static GLOBAL: profiling::tracy_client::ProfiledAllocator<std::alloc::System> =
     profiling::tracy_client::ProfiledAllocator::new(std::alloc::System, 10);
 
+use crate::backend::{run_backend, sugguest_useful_backend};
 use yawc_config::Config;
 
 fn main() {
@@ -54,14 +55,5 @@ fn main() {
     tracing::info!("Initialising configuration instance");
     Config::init_config_instance().unwrap();
 
-    if std::env::var("WAYLAND_DISPLAY").is_ok() {
-        tracing::info!("Starting yawc with winit backend");
-        backend::winit::run_winit();
-    } else if std::env::var("DISPLAY").is_ok() {
-        tracing::info!("Starting yawc with x11 backend");
-        backend::x11::run_x11();
-    } else {
-        tracing::info!("Starting yawc on a tty using udev");
-        backend::udev::run_udev();
-    }
+    run_backend(sugguest_useful_backend());
 }
