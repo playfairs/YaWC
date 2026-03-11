@@ -39,7 +39,7 @@ use smithay::backend::input::AbsolutePositionEvent;
 
 #[cfg(any(feature = "winit", feature = "x11"))]
 use smithay::output::Output;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 use crate::state::Backend;
 #[cfg(feature = "udev")]
@@ -157,7 +157,6 @@ impl<BackendData: Backend> YawcState<BackendData> {
         use yawc_config::binds::Actions;
         let keycode = evt.key_code();
         let state = evt.state();
-        debug!(?keycode, ?state, "key");
         let serial = SCOUNTER.next_serial();
         let time = Event::time_msec(&evt);
         let mut suppressed_keys = self.suppressed_keys.clone();
@@ -204,13 +203,6 @@ impl<BackendData: Backend> YawcState<BackendData> {
                 time,
                 |_, modifiers, handle| {
                     let keysym = handle.modified_sym();
-
-                    debug!(
-                        ?state,
-                        mods = ?modifiers,
-                        keysym = ::xkbcommon::xkb::keysym_get_name(keysym),
-                        "keysym"
-                    );
 
                     // If the key is pressed and triggered a action
                     // we will not forward the key to the client.

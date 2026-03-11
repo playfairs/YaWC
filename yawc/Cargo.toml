@@ -6,12 +6,10 @@ yawc-config.workspace = true
 thiserror.workspace = true
 xkbcommon.workspace = true
 profiling.workspace = true
+renderdoc.workspace = true
 bitflags.workspace = true
 tracing.workspace = true
 smithay.workspace = true
-
-[target.'cfg(debug_assertions)'.dependencies]
-renderdoc.workspace = true
 png.workspace = true
 
 [dependencies.xcursor]
