@@ -51,6 +51,7 @@ use smithay::{
             protocol::wl_surface::WlSurface,
         },
     },
+    utils::Transform,
     utils::{Clock, Logical, Monotonic, Point, Rectangle, Serial, Time},
     wayland::{
         commit_timing::{CommitTimerBarrierStateUserData, CommitTimingManagerState},
@@ -658,10 +659,7 @@ impl<BackendData: Backend> ImageCopyCaptureHandler for YawcState<BackendData> {
         let mode = output.current_mode()?;
 
         Some(BufferConstraints {
-            size: mode
-                .size
-                .to_logical(1)
-                .to_buffer(1, smithay::utils::Transform::Normal),
+            size: mode.size.to_logical(1).to_buffer(1, Transform::Normal),
             shm: vec![
                 smithay::reexports::wayland_server::protocol::wl_shm::Format::Argb8888,
                 smithay::reexports::wayland_server::protocol::wl_shm::Format::Xrgb8888,
@@ -676,8 +674,7 @@ impl<BackendData: Backend> ImageCopyCaptureHandler for YawcState<BackendData> {
     }
 
     fn frame(&mut self, _session: &SessionRef, frame: Frame) {
-        // Anvil doesn't implement actual capture
-        frame.fail(smithay::wayland::image_copy_capture::CaptureFailureReason::Unknown);
+        frame.success(Transform::Normal, None, std::time::Duration::from_secs(0))
     }
 }
 smithay::delegate_image_copy_capture!(@<BackendData: Backend + 'static> YawcState<BackendData>);
