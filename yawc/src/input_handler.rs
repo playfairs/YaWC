@@ -1409,6 +1409,16 @@ fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
 // but it's seems unlikely with the `cnonicalize_keysym` function
 // trying to remove that talk, and I would think it will remove that
 // talking ability.
+//
+// Should the Config treat Mod+T and Mod+t as the same keybind,
+// if not, what differs from what the input_handler does vs the config,
+// the input_handler knows how to handle the casing, can't the config just
+// inherit this ability from input_handler? If not, can't we just create a system
+// that can be implemented for both input_handler and the config? If we do this,
+// it would make it easier for other case sensitive stuff, making a system for this
+// would be a greatly easier option, plus we can use it for other stuff if it comes to that.
+// If anything, I think we should create a seperate repository for this, or, at least
+// make a repo for the Input Handler, and have the compositor and config use it as a dependency.
 fn process_keyboard_shortcut(
     modifiers: ModifiersState,
     keysym: Keysym,
