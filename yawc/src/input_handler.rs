@@ -1409,7 +1409,7 @@ fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
 // but it's seems unlikely with the `cnonicalize_keysym` function
 // trying to remove that talk, and I would think it will remove that
 // talking ability.
-//
+// ------------------------------------------------------------------------------------------- //
 // Should the Config treat Mod+T and Mod+t as the same keybind,
 // if not, what differs from what the input_handler does vs the config,
 // the input_handler knows how to handle the casing, can't the config just
@@ -1419,6 +1419,22 @@ fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
 // would be a greatly easier option, plus we can use it for other stuff if it comes to that.
 // If anything, I think we should create a seperate repository for this, or, at least
 // make a repo for the Input Handler, and have the compositor and config use it as a dependency.
+//
+// Might I also add that if we did make our own system for input handling and case sensitivity
+// we could use it for other stuff, for example, in text editors like Neovim, Helix, and VIM,
+// they don't treat ":WQA" as a valid command, so what we could do is create a system for
+// the case sensitivity, and whatever is valid for inheriting it as long as it isn't used by
+// something else.
+//
+// For example if both "META+A" and "META+a" both exist and do 2 different things,
+// then that keybind can be used in both ways until they both do a different thing, its a dynamic system
+// and if it's implemented correctly I think it could work.
+//
+// I only mention this because it would be nice for people who perhaps click caps lock on accident too often,
+// and may not realize it's even on, is it not that important, sure but it would be a nice and probably
+// unique system to make and it probably wouldn't be that difficult to create. We already
+// have the input handler and part of the config, it shouldn't be too difficult.
+// ------------------------------------------------------------------------------------------------------ //
 fn process_keyboard_shortcut(
     modifiers: ModifiersState,
     keysym: Keysym,
