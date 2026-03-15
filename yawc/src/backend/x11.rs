@@ -3,6 +3,8 @@ use std::{
     time::Duration,
 };
 
+#[cfg(debug_assertions)]
+use crate::fps_counter::Fps;
 use crate::{
     drawing::*,
     render::*,
@@ -10,8 +12,6 @@ use crate::{
 };
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
-#[cfg(debug_assertions)]
-use smithay::backend::{allocator::Fourcc, renderer::ImportMem};
 
 use smithay::{
     backend::{
@@ -222,32 +222,10 @@ pub fn run_x11() {
     };
 
     #[cfg(debug_assertions)]
-    let fps_texture = {
-        use png::{Decoder, Transformations};
-        use std::io::Cursor;
-
-        let mut decoder = Decoder::new(Cursor::new(FPS_NUMBERS_PNG));
-        decoder.set_transformations(Transformations::EXPAND);
-
-        let mut reader = decoder.read_info().unwrap();
-
-        let mut buf = vec![0; reader.output_buffer_size().unwrap()];
-        let info = reader.next_frame(&mut buf).unwrap();
-
-        let pixels = &buf[..info.buffer_size()];
-
-        renderer
-            .import_memory(
-                pixels,
-                Fourcc::Abgr8888,
-                (info.width as i32, info.height as i32).into(),
-                false,
-            )
-            .expect("Unable to upload FPS texture")
-    };
+    let fps_texture = crate::fps_counter::fps_glestexture(&mut renderer);
 
     #[cfg(debug_assertions)]
-    let mut fps_element = FpsElement::new(fps_texture);
+    let mut fps_element = crate::fps_counter::FpsElement::new(fps_texture);
 
     let output = Output::new(
         OUTPUT_NAME.to_string(),

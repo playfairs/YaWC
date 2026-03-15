@@ -19,7 +19,7 @@ use smithay::{
 };
 
 #[cfg(debug_assertions)]
-use crate::drawing::FpsElement;
+use crate::fps_counter::FpsElement;
 use crate::{
     drawing::{CLEAR_COLOR, CLEAR_COLOR_FULLSCREEN, PointerRenderElement},
     shell::{FullscreenSurface, WindowElement, WindowRenderElement},

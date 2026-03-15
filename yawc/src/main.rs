@@ -10,6 +10,7 @@ pub mod drawing;
 pub mod focus;
 pub mod handlers;
 pub mod logging;
+pub mod fps_counter;
 
 pub mod render;
 pub mod shell;

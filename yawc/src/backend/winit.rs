@@ -6,10 +6,7 @@ use std::{
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
 #[cfg(debug_assertions)]
-use smithay::{
-    backend::{allocator::Fourcc, renderer::ImportMem},
-    reexports::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle},
-};
+use smithay::reexports::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
 use smithay::{
     backend::{
@@ -49,7 +46,7 @@ use smithay::{
 use tracing::{error, info, warn};
 
 use crate::state::{Backend, YawcState, take_presentation_feedback};
-use crate::{drawing::*, render::*};
+use crate::{drawing::*, fps_counter::Fps, render::*};
 
 pub const OUTPUT_NAME: &str = "winit";
 
@@ -138,33 +135,10 @@ pub fn run_winit() {
     output.set_preferred(mode);
 
     #[cfg(debug_assertions)]
-    let fps_texture = {
-        use png::{Decoder, Transformations};
-        use std::io::Cursor;
-
-        let mut decoder = Decoder::new(Cursor::new(FPS_NUMBERS_PNG));
-        decoder.set_transformations(Transformations::EXPAND);
-
-        let mut reader = decoder.read_info().unwrap();
-
-        let mut buf = vec![0; reader.output_buffer_size().unwrap()];
-        let info = reader.next_frame(&mut buf).unwrap();
-
-        let pixels = &buf[..info.buffer_size()];
-
-        backend
-            .renderer()
-            .import_memory(
-                pixels,
-                Fourcc::Abgr8888,
-                (info.width as i32, info.height as i32).into(),
-                false,
-            )
-            .expect("Unable to upload FPS texture")
-    };
+    let fps_texture = crate::fps_counter::fps_glestexture(backend.renderer());
 
     #[cfg(debug_assertions)]
-    let mut fps_element = FpsElement::new(fps_texture);
+    let mut fps_element = crate::fps_counter::FpsElement::new(fps_texture);
 
     let render_node = EGLDevice::device_for_display(backend.renderer().egl_context().display())
         .and_then(|device| device.try_get_render_node());

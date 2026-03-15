@@ -125,10 +125,7 @@ use {
     },
 };
 
-use crate::{
-    focus::{KeyboardFocusTarget, PointerFocusTarget},
-    shell::WindowElement,
-};
+use crate::{focus::KeyboardFocusTarget, shell::WindowElement};
 
 #[derive(Debug, Default)]
 pub struct ClientState {

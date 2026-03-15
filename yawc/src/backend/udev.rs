@@ -12,6 +12,7 @@ use yawc_config::Config;
 
 use crate::{
     drawing::*,
+    fps_counter::{FPS_NUMBERS_PNG, Fps, FpsElement},
     render::*,
     shell::WindowElement,
     state::{Backend, YawcState, take_presentation_feedback, update_primary_scanout_output},
@@ -487,7 +488,8 @@ pub fn run_udev() {
 
         for backend in state.backend_data.backends.values_mut() {
             for surface in backend.surfaces.values_mut() {
-                surface.fps_element = Some(FpsElement::new(fps_texture.clone()));
+                surface.fps_element =
+                    Some(crate::fps_counter::FpsElement::new(fps_texture.clone()));
             }
         }
 
