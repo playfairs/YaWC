@@ -9,20 +9,16 @@ use std::{
 use tracing::{info, warn};
 
 use smithay::{
-    backend::{
-        input::TabletToolDescriptor,
-        renderer::element::{
-            RenderElementStates, default_primary_scanout_output_compare,
-            utils::select_dmabuf_feedback,
-        },
+    backend::renderer::element::{
+        RenderElementStates, default_primary_scanout_output_compare, utils::select_dmabuf_feedback,
     },
     delegate_compositor, delegate_data_control, delegate_data_device, delegate_fixes,
     delegate_fractional_scale, delegate_input_method_manager, delegate_keyboard_shortcuts_inhibit,
     delegate_layer_shell, delegate_output, delegate_pointer_constraints, delegate_pointer_gestures,
-    delegate_presentation, delegate_primary_selection, delegate_relative_pointer, delegate_seat,
-    delegate_security_context, delegate_shm, delegate_tablet_manager, delegate_text_input_manager,
-    delegate_viewporter, delegate_virtual_keyboard_manager, delegate_xdg_activation,
-    delegate_xdg_decoration, delegate_xdg_shell,
+    delegate_presentation, delegate_primary_selection, delegate_relative_pointer,
+    delegate_security_context, delegate_shm, delegate_text_input_manager, delegate_viewporter,
+    delegate_virtual_keyboard_manager, delegate_xdg_activation, delegate_xdg_decoration,
+    delegate_xdg_shell,
     desktop::{
         PopupKind, PopupManager, Space,
         space::SpaceElement,
@@ -33,7 +29,7 @@ use smithay::{
         },
     },
     input::{
-        Seat, SeatHandler, SeatState,
+        Seat, SeatState,
         dnd::{DnDGrab, DndGrabHandler, DndTarget, GrabType, Source},
         keyboard::{Keysym, LedState, XkbConfig},
         pointer::{CursorImageStatus, Focus, PointerHandle},
@@ -91,12 +87,8 @@ use smithay::{
         },
         selection::{
             SelectionHandler,
-            data_device::{
-                DataDeviceHandler, DataDeviceState, WaylandDndGrabHandler, set_data_device_focus,
-            },
-            primary_selection::{
-                PrimarySelectionHandler, PrimarySelectionState, set_primary_focus,
-            },
+            data_device::{DataDeviceHandler, DataDeviceState, WaylandDndGrabHandler},
+            primary_selection::{PrimarySelectionHandler, PrimarySelectionState},
             wlr_data_control::{DataControlHandler, DataControlState},
         },
         shell::{
@@ -109,7 +101,7 @@ use smithay::{
         shm::{ShmHandler, ShmState},
         single_pixel_buffer::SinglePixelBufferState,
         socket::ListeningSocketSource,
-        tablet_manager::{TabletManagerState, TabletSeatHandler},
+        tablet_manager::TabletManagerState,
         text_input::TextInputManagerState,
         viewporter::ViewporterState,
         virtual_keyboard::VirtualKeyboardManagerState,
@@ -331,41 +323,6 @@ impl<BackendData: Backend> ShmHandler for YawcState<BackendData> {
 }
 delegate_shm!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> SeatHandler for YawcState<BackendData> {
-    type KeyboardFocus = KeyboardFocusTarget;
-    type PointerFocus = PointerFocusTarget;
-    type TouchFocus = PointerFocusTarget;
-
-    fn seat_state(&mut self) -> &mut SeatState<YawcState<BackendData>> {
-        &mut self.seat_state
-    }
-
-    fn focus_changed(&mut self, seat: &Seat<Self>, target: Option<&KeyboardFocusTarget>) {
-        let dh = &self.display_handle;
-
-        let wl_surface = target.and_then(WaylandFocus::wl_surface);
-
-        let focus = wl_surface.and_then(|s| dh.get_client(s.id()).ok());
-        set_data_device_focus(dh, seat, focus.clone());
-        set_primary_focus(dh, seat, focus);
-    }
-    fn cursor_image(&mut self, _seat: &Seat<Self>, image: CursorImageStatus) {
-        self.cursor_status = image;
-    }
-
-    fn led_state_changed(&mut self, _seat: &Seat<Self>, led_state: LedState) {
-        self.backend_data.update_led_state(led_state)
-    }
-}
-delegate_seat!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
-impl<BackendData: Backend> TabletSeatHandler for YawcState<BackendData> {
-    fn tablet_tool_image(&mut self, _tool: &TabletToolDescriptor, image: CursorImageStatus) {
-        // TODO: tablet tools should have their own cursors
-        self.cursor_status = image;
-    }
-}
-delegate_tablet_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 delegate_text_input_manager!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
 impl<BackendData: Backend> InputMethodHandler for YawcState<BackendData> {
