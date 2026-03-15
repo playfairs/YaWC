@@ -5,7 +5,7 @@ use std::{
 
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 use smithay::{
     backend::{allocator::Fourcc, renderer::ImportMem},
     reexports::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle},
@@ -58,8 +58,8 @@ pub struct WinitData {
     damage_tracker: OutputDamageTracker,
     dmabuf_state: (DmabufState, DmabufGlobal, Option<DmabufFeedback>),
     full_redraw: u8,
-    #[cfg(feature = "debug")]
-    pub fps: fps_ticker::Fps,
+    #[cfg(debug_assertions)]
+    pub fps: Fps,
 }
 
 impl DmabufHandler for YawcState<WinitData> {
@@ -137,25 +137,33 @@ pub fn run_winit() {
     );
     output.set_preferred(mode);
 
-    #[cfg(feature = "debug")]
-    #[allow(deprecated)]
-    let fps_image = image::io::Reader::with_format(
-        std::io::Cursor::new(FPS_NUMBERS_PNG),
-        image::ImageFormat::Png,
-    )
-    .decode()
-    .unwrap();
-    #[cfg(feature = "debug")]
-    let fps_texture = backend
-        .renderer()
-        .import_memory(
-            &fps_image.to_rgba8(),
-            Fourcc::Abgr8888,
-            (fps_image.width() as i32, fps_image.height() as i32).into(),
-            false,
-        )
-        .expect("Unable to upload FPS texture");
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
+    let fps_texture = {
+        use png::{Decoder, Transformations};
+        use std::io::Cursor;
+
+        let mut decoder = Decoder::new(Cursor::new(FPS_NUMBERS_PNG));
+        decoder.set_transformations(Transformations::EXPAND);
+
+        let mut reader = decoder.read_info().unwrap();
+
+        let mut buf = vec![0; reader.output_buffer_size().unwrap()];
+        let info = reader.next_frame(&mut buf).unwrap();
+
+        let pixels = &buf[..info.buffer_size()];
+
+        backend
+            .renderer()
+            .import_memory(
+                pixels,
+                Fourcc::Abgr8888,
+                (info.width as i32, info.height as i32).into(),
+                false,
+            )
+            .expect("Unable to upload FPS texture")
+    };
+
+    #[cfg(debug_assertions)]
     let mut fps_element = FpsElement::new(fps_texture);
 
     let render_node = EGLDevice::device_for_display(backend.renderer().egl_context().display())
@@ -214,8 +222,8 @@ pub fn run_winit() {
             damage_tracker,
             dmabuf_state,
             full_redraw: 0,
-            #[cfg(feature = "debug")]
-            fps: fps_ticker::Fps::default(),
+            #[cfg(debug_assertions)]
+            fps: Fps::default(),
         }
     };
     let mut state = YawcState::init(display, event_loop.handle(), data, true);
@@ -279,9 +287,9 @@ pub fn run_winit() {
 
             pointer_element.set_status(state.cursor_status.clone());
 
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             let fps = state.backend_data.fps.avg().round() as u32;
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             fps_element.update_fps(fps);
 
             let full_redraw = &mut state.backend_data.full_redraw;
@@ -309,7 +317,7 @@ pub fn run_winit() {
                 };
             let cursor_pos = state.pointer.current_location();
 
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             let mut renderdoc = state.renderdoc.as_mut();
 
             let age = if *full_redraw > 0 {
@@ -317,7 +325,7 @@ pub fn run_winit() {
             } else {
                 backend.buffer_age().unwrap_or(0)
             };
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             let window_handle = backend
                 .window()
                 .window_handle()
@@ -330,7 +338,7 @@ pub fn run_winit() {
                 })
                 .unwrap_or_else(|_| std::ptr::null_mut());
             let render_res = backend.bind().and_then(|(renderer, mut fb)| {
-                #[cfg(feature = "debug")]
+                #[cfg(debug_assertions)]
                 if let Some(renderdoc) = renderdoc.as_mut() {
                     renderdoc.start_frame_capture(
                         renderer.egl_context().get_context_handle(),
@@ -367,7 +375,7 @@ pub fn run_winit() {
                     }
                 }
 
-                #[cfg(feature = "debug")]
+                #[cfg(debug_assertions)]
                 elements.push(CustomRenderElements::Fps(fps_element.clone()));
 
                 render_output(
@@ -395,7 +403,7 @@ pub fn run_winit() {
                         warn!("Failed to submit buffer: {}", err);
                     }
 
-                    #[cfg(feature = "debug")]
+                    #[cfg(debug_assertions)]
                     if let Some(renderdoc) = renderdoc.as_mut() {
                         renderdoc.end_frame_capture(
                             backend.renderer().egl_context().get_context_handle(),
@@ -438,7 +446,7 @@ pub fn run_winit() {
                     state.post_repaint(&output, frame_target, None, &states);
                 }
                 Err(SwapBuffersError::ContextLost(err)) => {
-                    #[cfg(feature = "debug")]
+                    #[cfg(debug_assertions)]
                     if let Some(renderdoc) = renderdoc.as_mut() {
                         renderdoc.discard_frame_capture(
                             backend.renderer().egl_context().get_context_handle(),
@@ -472,7 +480,7 @@ pub fn run_winit() {
             display_handle.flush_clients().unwrap();
         }
 
-        #[cfg(feature = "debug")]
+        #[cfg(debug_assertions)]
         state.backend_data.fps.tick();
     }
 }

@@ -1,7 +1,7 @@
 use core::ops::Deref;
 
-#[derive(knuffel::Decode, Debug)]
-pub struct Envs(#[knuffel(children)] pub Vec<Env>);
+#[derive(knus::Decode, Debug)]
+pub struct Envs(#[knus(children)] pub Vec<Env>);
 
 impl Deref for Envs {
     type Target = [Env];
@@ -29,10 +29,10 @@ impl<'a> IntoIterator for &'a Envs {
     }
 }
 
-#[derive(knuffel::Decode, Debug, PartialEq)]
+#[derive(knus::Decode, Debug, PartialEq)]
 pub struct Env {
-    #[knuffel(node_name)]
+    #[knus(node_name)]
     pub name: String,
-    #[knuffel(argument)]
+    #[knus(argument)]
     pub value: String,
 }

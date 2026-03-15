@@ -1,3 +1,5 @@
+version "1"
+
 envs {
 	FAVOURITE_FOOD "lettuce"
 }
@@ -29,4 +31,11 @@ binds {
 	Mod+7 { screen 7; }
 	Mod+8 { screen 8; }
 	Mod+9 { screen 9; }
+}
+
+xkb {
+	layout "us"
+	variant ""
+	repeat-rate 150
+	repeat-delay 100
 }

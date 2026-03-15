@@ -13,7 +13,7 @@ use smithay::{
     render_elements,
     utils::{Physical, Point, Scale},
 };
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 use smithay::{
     backend::renderer::{
         Frame,
@@ -121,10 +121,10 @@ where
     }
 }
 
-#[cfg(feature = "debug")]
-pub static FPS_NUMBERS_PNG: &[u8] = include_bytes!("../resources/numbers.png");
+#[cfg(debug_assertions)]
+pub static FPS_NUMBERS_PNG: &[u8] = include_bytes!("../../resources/numbers.png");
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 #[derive(Debug, Clone)]
 pub struct FpsElement<T: Texture> {
     id: Id,
@@ -133,7 +133,7 @@ pub struct FpsElement<T: Texture> {
     commit_counter: CommitCounter,
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 impl<T: Texture> FpsElement<T> {
     pub fn new(texture: T) -> Self {
         FpsElement {
@@ -152,7 +152,7 @@ impl<T: Texture> FpsElement<T> {
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 impl<T> Element for FpsElement<T>
 where
     T: Texture + 'static,
@@ -192,7 +192,7 @@ where
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 impl<R> RenderElement<R> for FpsElement<R::TextureId>
 where
     R: Renderer + ImportAll,
@@ -257,5 +257,121 @@ where
         }
 
         Ok(())
+    }
+}
+
+#[cfg(debug_assertions)]
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    time::{Duration, Instant},
+};
+
+/// Tracking frames-per-second.
+#[derive(Clone, Debug)]
+#[cfg(debug_assertions)]
+pub struct Fps {
+    window_len: usize,
+    inner: RefCell<Inner>,
+}
+
+#[derive(Clone, Debug)]
+#[cfg(debug_assertions)]
+struct Inner {
+    window: VecDeque<Duration>,
+    last: Instant,
+    avg: f64,
+    min: f64,
+    max: f64,
+}
+
+#[cfg(debug_assertions)]
+impl Fps {
+    /// The window length used by the default constructor.
+    pub const DEFAULT_WINDOW_LEN: usize = 60;
+
+    /// Create a new `Fps` with the given window length as a number of frames.
+    ///
+    /// The larger the window, the "smoother" the FPS.
+    pub fn with_window_len(window_len: usize) -> Self {
+        let window = VecDeque::with_capacity(window_len);
+        let last = Instant::now();
+        let (avg, min, max) = (0.0, 0.0, 0.0);
+        let inner = RefCell::new(Inner {
+            window,
+            last,
+            avg,
+            min,
+            max,
+        });
+        Fps { window_len, inner }
+    }
+
+    /// Call this once per frame to allow the `Fps` instance to sample the rate internally.
+    pub fn tick(&self) {
+        let now = Instant::now();
+        let mut inner = self.inner.borrow_mut();
+        let delta = now.duration_since(inner.last);
+        inner.last = now;
+        while inner.window.len() + 1 > self.window_len {
+            inner.window.pop_front();
+        }
+        inner.window.push_back(delta);
+        inner.avg = inner.calc_avg();
+        inner.min = inner.calc_min();
+        inner.max = inner.calc_max();
+    }
+
+    /// Retrieve the average frames-per-second at the moment of the last call to `tick`.
+    pub fn avg(&self) -> f64 {
+        self.inner.borrow().avg
+    }
+
+    /// Retrieve the minimum frames-per-second that was reached within the window at the moment
+    /// `tick` was last called.
+    pub fn min(&self) -> f64 {
+        self.inner.borrow().min
+    }
+
+    /// Retrieve the maximum frames-per-second that was reached within the window at the moment
+    /// `tick` was last called.
+    pub fn max(&self) -> f64 {
+        self.inner.borrow().max
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Inner {
+    /// Calculate the frames per second from the current state of the window.
+    fn calc_avg(&self) -> f64 {
+        let sum_secs = self.window.iter().map(|d| d.as_secs_f64()).sum::<f64>();
+        1.0 / (sum_secs / self.window.len() as f64)
+    }
+
+    /// Find the minimum frames per second that occurs over the window.
+    fn calc_min(&self) -> f64 {
+        1.0 / self
+            .window
+            .iter()
+            .max()
+            .map(|d| d.as_secs_f64())
+            .unwrap_or(0.0)
+    }
+
+    /// Find the minimum frames per second that occurs over the window.
+    fn calc_max(&self) -> f64 {
+        1.0 / self
+            .window
+            .iter()
+            .min()
+            .map(|d| d.as_secs_f64())
+            .unwrap_or(0.0)
+    }
+}
+
+#[cfg(debug_assertions)]
+impl Default for Fps {
+    fn default() -> Self {
+        Fps::with_window_len(Self::DEFAULT_WINDOW_LEN)
     }
 }

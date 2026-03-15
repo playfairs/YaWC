@@ -24,7 +24,7 @@ use crate::{
 use smithay::backend::drm::compositor::PrimaryPlaneElement;
 #[cfg(feature = "egl")]
 use smithay::backend::renderer::ImportEgl;
-#[cfg(feature = "debug")]
+#[cfg(debug_assertions)]
 use smithay::backend::renderer::{ImportMem, multigpu::MultiTexture};
 use smithay::{
     backend::{
@@ -140,7 +140,7 @@ pub struct UdevData {
     backends: HashMap<DrmNode, BackendData>,
     pointer_images: Vec<(xcursor::parser::Image, MemoryRenderBuffer)>,
     pointer_element: PointerElement,
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     fps_texture: Option<MultiTexture>,
     pointer_image: crate::cursor::Cursor,
     debug_flags: DebugFlags,
@@ -309,7 +309,7 @@ pub fn run_udev() {
         pointer_image: crate::cursor::Cursor::load(),
         pointer_images: Vec::new(),
         pointer_element: PointerElement::default(),
-        #[cfg(feature = "debug")]
+        #[cfg(debug_assertions)]
         fps_texture: None,
         debug_flags: DebugFlags::empty(),
         keyboards: Vec::new(),
@@ -458,20 +458,29 @@ pub fn run_udev() {
         .single_renderer(&primary_gpu)
         .unwrap();
 
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     {
-        #[allow(deprecated)]
-        let fps_image = image::io::Reader::with_format(
-            std::io::Cursor::new(FPS_NUMBERS_PNG),
-            image::ImageFormat::Png,
-        )
-        .decode()
-        .unwrap();
+        use png::Decoder;
+        use std::io::Cursor;
+
+        let decoder = Decoder::new(Cursor::new(FPS_NUMBERS_PNG));
+        let mut reader = decoder.read_info().unwrap();
+
+        let mut buf = vec![
+            0;
+            reader
+                .output_buffer_size()
+                .expect("png buffer size unknown")
+        ];
+        let info = reader.next_frame(&mut buf).unwrap();
+
+        let pixels = &buf[..info.buffer_size()];
+
         let fps_texture = renderer
             .import_memory(
-                &fps_image.to_rgba8(),
+                pixels,
                 Fourcc::Abgr8888,
-                (fps_image.width() as i32, fps_image.height() as i32).into(),
+                (info.width as i32, info.height as i32).into(),
                 false,
             )
             .expect("Unable to upload FPS texture");
@@ -481,6 +490,7 @@ pub fn run_udev() {
                 surface.fps_element = Some(FpsElement::new(fps_texture.clone()));
             }
         }
+
         state.backend_data.fps_texture = Some(fps_texture);
     }
 
@@ -697,9 +707,9 @@ struct SurfaceData {
         DrmDeviceFd,
     >,
     disable_direct_scanout: bool,
-    #[cfg(feature = "debug")]
-    fps: fps_ticker::Fps,
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
+    fps: Fps,
+    #[cfg(debug_assertions)]
     fps_element: Option<FpsElement<MultiTexture>>,
     dmabuf_feedback: Option<SurfaceDmabufFeedback>,
     last_presentation_time: Option<Time<Monotonic>>,
@@ -1066,7 +1076,7 @@ impl YawcState<UdevData> {
                 device_id: node,
             });
 
-            #[cfg(feature = "debug")]
+            #[cfg(debug_assertions)]
             let fps_element = self.backend_data.fps_texture.clone().map(FpsElement::new);
 
             let driver = match drm_device.get_driver() {
@@ -1141,9 +1151,9 @@ impl YawcState<UdevData> {
                 global: Some(global),
                 drm_output,
                 disable_direct_scanout,
-                #[cfg(feature = "debug")]
-                fps: fps_ticker::Fps::default(),
-                #[cfg(feature = "debug")]
+                #[cfg(debug_assertions)]
+                fps: Fps::default(),
+                #[cfg(debug_assertions)]
                 fps_element,
                 dmabuf_feedback,
                 last_presentation_time: None,
@@ -1744,7 +1754,7 @@ fn render_surface<'a>(
         }
     }
 
-    #[cfg(feature = "debug")]
+    #[cfg(debug_assertions)]
     if let Some(element) = surface.fps_element.as_mut() {
         element.update_fps(surface.fps.avg().round() as u32);
         surface.fps.tick();

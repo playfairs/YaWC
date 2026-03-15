@@ -3,8 +3,8 @@ use core::str::FromStr;
 use smithay::input::keyboard::Keysym;
 use smithay::input::keyboard::xkb;
 
-#[derive(knuffel::Decode, Debug)]
-pub struct Binds(#[knuffel(children)] pub Vec<Bind>);
+#[derive(knus::Decode, Debug)]
+pub struct Binds(#[knus(children)] pub Vec<Bind>);
 
 impl Deref for Binds {
     type Target = [Bind];
@@ -32,25 +32,25 @@ impl<'a> IntoIterator for &'a Binds {
     }
 }
 
-#[derive(knuffel::Decode, Debug, PartialEq)]
+#[derive(knus::Decode, Debug, PartialEq)]
 pub struct Bind {
-    #[knuffel(node_name)]
+    #[knus(node_name)]
     pub key_register: KeyBind,
 
-    #[knuffel(children)]
+    #[knus(children)]
     pub actions: Vec<Actions>,
 }
 
-#[derive(knuffel::Decode, Debug, Clone, PartialEq)]
+#[derive(knus::Decode, Debug, Clone, PartialEq)]
 pub enum Actions {
     Quit,
     CloseWindow,
-    Spawn(#[knuffel(arguments)] Vec<String>),
-    SpawnSh(#[knuffel(argument)] String),
+    Spawn(#[knus(arguments)] Vec<String>),
+    SpawnSh(#[knus(argument)] String),
     /// Trigger a vt-switch
-    VtSwitch(#[knuffel(argument)] i32),
+    VtSwitch(#[knus(argument)] i32),
     /// Switch the current screen
-    Screen(#[knuffel(argument)] usize),
+    Screen(#[knus(argument)] usize),
     ScaleUp,
     ScaleDown,
     TogglePreview,
