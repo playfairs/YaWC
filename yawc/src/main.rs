@@ -11,6 +11,7 @@ pub mod focus;
 pub mod fps_counter;
 pub mod handlers;
 pub mod logging;
+pub mod protocols;
 
 pub mod render;
 pub mod shell;

@@ -47,8 +47,7 @@ use smithay::{
             protocol::wl_surface::WlSurface,
         },
     },
-    utils::Transform,
-    utils::{Clock, Logical, Monotonic, Point, Rectangle, Serial, Time},
+    utils::{Clock, Logical, Monotonic, Point, Rectangle, Serial, Time, Transform},
     wayland::{
         commit_timing::{CommitTimerBarrierStateUserData, CommitTimingManagerState},
         compositor::{
@@ -61,8 +60,8 @@ use smithay::{
             FractionalScaleHandler, FractionalScaleManagerState, with_fractional_scale,
         },
         image_capture_source::{
-            ImageCaptureSource, ImageCaptureSourceHandler, ImageCaptureSourceState,
-            OutputCaptureSourceHandler, OutputCaptureSourceState,
+            ImageCaptureSource, ImageCaptureSourceState, OutputCaptureSourceState,
+            ToplevelCaptureSourceState,
         },
         image_copy_capture::{
             BufferConstraints, Frame, ImageCopyCaptureHandler, ImageCopyCaptureState, Session,
@@ -175,6 +174,7 @@ pub struct YawcState<BackendData: Backend + 'static> {
     pub commit_timing_manager_state: CommitTimingManagerState,
     pub image_capture_source_state: ImageCaptureSourceState,
     pub output_capture_source_state: OutputCaptureSourceState,
+    pub toplevel_capture_source_state: ToplevelCaptureSourceState,
     pub image_copy_capture_state: ImageCopyCaptureState,
 
     pub dnd_icon: Option<DndIcon>,
@@ -583,24 +583,6 @@ smithay::delegate_commit_timing!(@<BackendData: Backend + 'static> YawcState<Bac
 
 delegate_fixes!(@<BackendData: Backend + 'static> YawcState<BackendData>);
 
-impl<BackendData: Backend> ImageCaptureSourceHandler for YawcState<BackendData> {
-    fn source_destroyed(&mut self, _source: ImageCaptureSource) {
-        // Anvil doesn't track sources
-    }
-}
-smithay::delegate_image_capture_source!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
-impl<BackendData: Backend> OutputCaptureSourceHandler for YawcState<BackendData> {
-    fn output_capture_source_state(&mut self) -> &mut OutputCaptureSourceState {
-        &mut self.output_capture_source_state
-    }
-
-    fn output_source_created(&mut self, source: ImageCaptureSource, output: &Output) {
-        source.user_data().insert_if_missing(|| output.downgrade());
-    }
-}
-smithay::delegate_output_capture_source!(@<BackendData: Backend + 'static> YawcState<BackendData>);
-
 impl<BackendData: Backend> ImageCopyCaptureHandler for YawcState<BackendData> {
     fn image_copy_capture_state(&mut self) -> &mut ImageCopyCaptureState {
         &mut self.image_copy_capture_state
@@ -716,11 +698,6 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
         });
         FixesState::new::<Self>(&dh);
 
-        // Image capture protocols (screencopy)
-        let image_capture_source_state = ImageCaptureSourceState::new();
-        let output_capture_source_state = OutputCaptureSourceState::new::<Self>(&dh);
-        let image_copy_capture_state = ImageCopyCaptureState::new::<Self>(&dh);
-
         // init input
         let seat_name = backend_data.seat_name();
         let mut seat = seat_state.new_wl_seat(&dh, seat_name.clone());
@@ -747,6 +724,11 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
 
         #[cfg(feature = "xwayland")]
         XWaylandKeyboardGrabState::new::<Self>(&dh.clone());
+
+        let image_capture_source_state = ImageCaptureSourceState::new();
+        let output_capture_source_state = OutputCaptureSourceState::new::<Self>(&dh);
+        let toplevel_capture_source_state = ToplevelCaptureSourceState::new::<Self>(&dh);
+        let image_copy_capture_state = ImageCopyCaptureState::new::<Self>(&dh);
 
         YawcState {
             backend_data,
@@ -776,8 +758,9 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
             fifo_manager_state,
             commit_timing_manager_state,
             image_capture_source_state,
-            output_capture_source_state,
             image_copy_capture_state,
+            toplevel_capture_source_state,
+            output_capture_source_state,
             dnd_icon: None,
             suppressed_keys: Vec::new(),
             cursor_status: CursorImageStatus::default_named(),
