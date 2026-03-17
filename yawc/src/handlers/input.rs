@@ -892,11 +892,16 @@ impl YawcState<UdevData> {
             });
         }
 
+        // DEBUG:
+        // Clamp the deltas to make sure backend is sending good data,
+        // and is not over-doing (most likley due to scale.)
+        let (dx, dy) = (evt.delta_x_unaccel(), evt.delta_y_unaccel());
+
         pointer.relative_motion(
             self,
             under.clone(),
             &RelativeMotionEvent {
-                delta: evt.delta(),
+                delta: (dx.clamp(-50.0, 50.0), dy.clamp(-50.0, 50.0)).into(),
                 delta_unaccel: evt.delta_unaccel(),
                 utime: evt.time(),
             },
@@ -1352,16 +1357,6 @@ impl YawcState<UdevData> {
     }
 }
 
-fn canonicalize_keysym(sym: Keysym) -> Keysym {
-    if let Some(ch) = sym.key_char()
-        && let Some(lower) = ch.to_lowercase().next()
-    {
-        return Keysym::from_char(lower);
-    }
-
-    sym
-}
-
 fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
     use yawc_config::binds::ModMask;
 
@@ -1386,59 +1381,17 @@ fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
     mask
 }
 
-// TODO + FIXME:
-// The keybinds will be interpolated to the median common
-// language which should be spoke, between them both
-// but the config, still speaks both ways with Q or q being
-// different.
-//
-// Test yourself with:
-// Mod+T { spawn "alacritty"; }
-// Mod+t { spawn "alacritty"; }
-//
-// Notice that Mod+T will not work, but Mod+t will work.
-// I dont know if Mod+Shift+T will be what executes for Mod+T,
-// but it's seems unlikely with the `cnonicalize_keysym` function
-// trying to remove that talk, and I would think it will remove that
-// talking ability.
-// ------------------------------------------------------------------------------------------- //
-// Should the Config treat Mod+T and Mod+t as the same keybind,
-// if not, what differs from what the input_handler does vs the config,
-// the input_handler knows how to handle the casing, can't the config just
-// inherit this ability from input_handler? If not, can't we just create a system
-// that can be implemented for both input_handler and the config? If we do this,
-// it would make it easier for other case sensitive stuff, making a system for this
-// would be a greatly easier option, plus we can use it for other stuff if it comes to that.
-// If anything, I think we should create a seperate repository for this, or, at least
-// make a repo for the Input Handler, and have the compositor and config use it as a dependency.
-//
-// Might I also add that if we did make our own system for input handling and case sensitivity
-// we could use it for other stuff, for example, in text editors like Neovim, Helix, and VIM,
-// they don't treat ":WQA" as a valid command, so what we could do is create a system for
-// the case sensitivity, and whatever is valid for inheriting it as long as it isn't used by
-// something else.
-//
-// For example if both "META+A" and "META+a" both exist and do 2 different things,
-// then that keybind can be used in both ways until they both do a different thing, its a dynamic system
-// and if it's implemented correctly I think it could work.
-//
-// I only mention this because it would be nice for people who perhaps click caps lock on accident too often,
-// and may not realize it's even on, is it not that important, sure but it would be a nice and probably
-// unique system to make and it probably wouldn't be that difficult to create. We already
-// have the input handler and part of the config, it shouldn't be too difficult.
-// ------------------------------------------------------------------------------------------------------ //
 fn process_keyboard_shortcut(
     modifiers: ModifiersState,
     keysym: Keysym,
 ) -> yawc_config::binds::Actions {
     use yawc_config::binds::Actions;
 
-    let sym = canonicalize_keysym(keysym);
     let mods = modmask_from_state(modifiers);
     let config = yawc_config::Config::read_config();
 
     for bind in &config.binds {
-        if bind.key_register.sym == sym && bind.key_register.mods == mods {
+        if bind.key_register.sym == keysym && bind.key_register.mods == mods {
             if let Some(action) = bind.actions.first() {
                 return action.clone();
             }

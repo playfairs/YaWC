@@ -8,9 +8,9 @@ pub mod backend;
 pub mod cursor;
 pub mod drawing;
 pub mod focus;
+pub mod fps_counter;
 pub mod handlers;
 pub mod logging;
-pub mod fps_counter;
 
 pub mod render;
 pub mod shell;
@@ -45,9 +45,6 @@ fn main() {
         eprintln!("Unknown arguments: {unknown:?}");
         std::process::exit(2);
     }
-
-    drop(args);
-    drop(unknown);
 
     #[cfg(feature = "profile-with-tracy")]
     profiling::tracy_client::Client::start();

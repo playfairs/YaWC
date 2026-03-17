@@ -73,6 +73,7 @@ There are certain environment variables which can be used by and for YaWC.
 
 | Variable                     | Use Case                                  | Reference           |
 |------------------------------+-------------------------------------------+---------------------|
+| YAWC_XWAYLAND_SCALE          | Evidently - it changes Xwayland scaling   | ./src/state.rs      |
 | YAWC_NO_VULKAN               | Skips Vulkan for X11                      | ./src/x11.rs        |
 | YAWC_DISABLE_10BIT           | Skips 10-bit Color for udev rendering     | ./src/udev.rs       |
 | YAWC_DRM_DEVICE              | Specify DRI device e.g /dev/dri/card1     | ./src/udev.rs       |

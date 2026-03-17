@@ -823,7 +823,7 @@ impl<BackendData: Backend + 'static> YawcState<BackendData> {
                     x11_socket,
                     display_number,
                 } => {
-                    let xwayland_scale = std::env::var("ANVIL_XWAYLAND_SCALE")
+                    let xwayland_scale = std::env::var("YAWC_XWAYLAND_SCALE")
                         .ok()
                         .and_then(|s| s.parse::<f64>().ok())
                         .unwrap_or(1.);
