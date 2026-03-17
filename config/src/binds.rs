@@ -1,6 +1,7 @@
 use core::ops::Deref;
 use core::str::FromStr;
 use smithay::input::keyboard::Keysym;
+use smithay::input::keyboard::ModifiersState;
 use smithay::input::keyboard::xkb;
 
 #[derive(knus::Decode, Debug)]
@@ -95,9 +96,10 @@ impl FromStr for KeyBind {
                         return Err(format!("multiple keys in bind: {s}"));
                     }
 
-                    let sym = xkb::keysym_from_name(k, xkb::KEYSYM_NO_FLAGS);
-
-                    key = Some(sym);
+                    key = Some(canonicalize_keysym(xkb::keysym_from_name(
+                        k,
+                        xkb::KEYSYM_NO_FLAGS,
+                    )));
                 }
             }
         }
@@ -107,4 +109,40 @@ impl FromStr for KeyBind {
             sym: key.ok_or("no key specified")?,
         })
     }
+}
+
+/// Utility function which lowers keysyms passed in
+pub fn canonicalize_keysym(sym: Keysym) -> Keysym {
+    if let Some(ch) = sym.key_char()
+        && let Some(lower) = ch.to_lowercase().next()
+    {
+        return Keysym::from_char(lower);
+    }
+
+    sym
+}
+
+/// Utility to handle ModMasks
+pub fn modmask_from_state(mods: ModifiersState) -> ModMask {
+    use ModMask;
+
+    let mut mask = ModMask::empty();
+
+    if mods.shift {
+        mask |= ModMask::SHIFT;
+    }
+
+    if mods.ctrl {
+        mask |= ModMask::CTRL;
+    }
+
+    if mods.alt {
+        mask |= ModMask::ALT;
+    }
+
+    if mods.logo {
+        mask |= ModMask::SUPER;
+    }
+
+    mask
 }

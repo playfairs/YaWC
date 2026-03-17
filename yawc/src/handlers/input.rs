@@ -40,6 +40,7 @@ use smithay::backend::input::AbsolutePositionEvent;
 #[cfg(any(feature = "winit", feature = "x11"))]
 use smithay::output::Output;
 use tracing::{error, info};
+use yawc_config::binds::{canonicalize_keysym, modmask_from_state};
 
 use crate::state::Backend;
 #[cfg(feature = "udev")]
@@ -1357,39 +1358,16 @@ impl YawcState<UdevData> {
     }
 }
 
-fn modmask_from_state(mods: ModifiersState) -> yawc_config::binds::ModMask {
-    use yawc_config::binds::ModMask;
-
-    let mut mask = ModMask::empty();
-
-    if mods.shift {
-        mask |= ModMask::SHIFT;
-    }
-
-    if mods.ctrl {
-        mask |= ModMask::CTRL;
-    }
-
-    if mods.alt {
-        mask |= ModMask::ALT;
-    }
-
-    if mods.logo {
-        mask |= ModMask::SUPER;
-    }
-
-    mask
-}
-
 fn process_keyboard_shortcut(
     modifiers: ModifiersState,
     keysym: Keysym,
 ) -> yawc_config::binds::Actions {
     use yawc_config::binds::Actions;
 
+    let keysym = canonicalize_keysym(keysym);
     let mods = modmask_from_state(modifiers);
-    let config = yawc_config::Config::read_config();
 
+    let config = yawc_config::Config::read_config();
     for bind in &config.binds {
         if bind.key_register.sym == keysym && bind.key_register.mods == mods {
             if let Some(action) = bind.actions.first() {
