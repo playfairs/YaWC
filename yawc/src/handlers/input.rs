@@ -895,8 +895,9 @@ impl YawcState<UdevData> {
 
         // DEBUG:
         // Clamp the deltas to make sure backend is sending good data,
-        // and is not over-doing (most likley due to scale.)
+        // and is not over-doing
         let (dx, dy) = (evt.delta_x_unaccel(), evt.delta_y_unaccel());
+        println!("delta_x={dx}, delta_y={dy}");
 
         pointer.relative_motion(
             self,
