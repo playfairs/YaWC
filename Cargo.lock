@@ -2991,7 +2991,6 @@ version = "0.0.1"
 dependencies = [
  "bitflags 2.11.0",
  "gl_generator",
- "libc",
  "png",
  "profiling",
  "renderdoc",

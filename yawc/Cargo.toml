@@ -10,7 +10,6 @@ renderdoc.workspace = true
 bitflags.workspace = true
 tracing.workspace = true
 smithay.workspace = true
-libc.workspace = true
 png.workspace = true
 
 [dependencies.xcursor]

@@ -1,5 +1,3 @@
-use core::unreachable;
-
 #[cfg(feature = "udev")]
 pub mod udev;
 #[cfg(feature = "winit")]
@@ -21,7 +19,7 @@ impl Backend {
             Backend::Udev => self::udev::run_udev(),
             Backend::Winit => self::winit::run_winit(),
             Backend::X11 => self::x11::run_x11(),
-            Backend::NoBackend => unreachable!(),
+            Backend::NoBackend => panic!("No available backend was found."),
         }
     }
 }
@@ -48,7 +46,7 @@ pub fn sugguest_useful_backend() -> Backend {
         return Backend::X11;
     }
 
-    if unsafe { libc::isatty(libc::STDIN_FILENO) == 1 } {
+    if let Ok(_existing) = std::fs::exists("/dev/dri/card0") {
         tracing::debug!("Detected tty → udev backend");
         #[cfg(debug_assertions)]
         tracing::debug!("Check took {:?}", start.elapsed());
