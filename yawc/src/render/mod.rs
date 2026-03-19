@@ -1,5 +1,3 @@
-mod render_elements;
-
 use smithay::{
     backend::renderer::{
         Color32F, ImportAll, ImportMem, Renderer,
